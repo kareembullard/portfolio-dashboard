@@ -6,13 +6,9 @@ A full-featured portfolio management dashboard with multi-page navigation, finan
 
 ## Live Demo
 
-**HTML Version (no install needed):**
-Open `portfolio-management-dashboard-react_index.html` directly in your browser, or deploy to GitHub Pages:
-```
-https://[your-github-username].github.io/portfolio-management-dashboard/portfolio-management-dashboard-react_index.html
-```
+**Live:** [https://kareembullard.github.io/portfolio-dashboard/](https://kareembullard.github.io/portfolio-dashboard/)
 
-> A full React/Vite version is also included for local development (see below).
+`index.html` is the standalone build served directly from GitHub Pages — no build step, no install needed. `portfolio-management-dashboard-react_index.html` is kept alongside it as the original React/Vite source for local development (see below).
 
 ## Features
 
