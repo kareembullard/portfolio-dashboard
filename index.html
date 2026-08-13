@@ -47,6 +47,7 @@
   .tag.health-yellow, .tag.status-warn, .tag.alert-warning { background: var(--warn-dim); color: var(--warn); border-color: transparent; }
   .tag.health-red, .tag.status-bad { background: var(--bad-dim); color: var(--bad); border-color: transparent; }
   .tag.status-info, .tag.alert-info { background: var(--accent-dim); color: var(--accent); border-color: transparent; }
+  .tag.linked { background: var(--accent-dim); color: var(--accent); border-color: transparent; }
   .tag.pri-high { background: var(--bad-dim); color: var(--bad); border-color: transparent; }
   .tag.pri-medium { background: var(--warn-dim); color: var(--warn); border-color: transparent; }
   .tag.pri-low { background: var(--ok-dim); color: var(--ok); border-color: transparent; }
@@ -277,6 +278,7 @@ const SEED = {
     { id: "Suno-EXP-2025", name: "Suno Export & Music Management", phase: "Conduct", health: "green", status: "On Track", completion: 55, budget: 2000, spent: 900, lead: "Kareem B.", endDate: "2025-12-31", nextMilestone: "Release 10 Edited Tracks" },
     { id: "TMB-2025", name: "Automation & Bot Development", phase: "Develop, Setup", health: "green", status: "In Progress", completion: 45, budget: 1500, spent: 600, lead: "Kareem B.", endDate: "2025-11-30", nextMilestone: "Deploy Task Merging Bot" },
     { id: "FR-2025", name: "Financial Reorganization (FR-2025)", phase: "Setup, Conduct", health: "yellow", status: "At Risk", completion: 30, budget: 2000, spent: 1800, lead: "Kareem B.", endDate: "2025-12-31", nextMilestone: "Finalize financial reorganization" },
+    { id: "RPC-2025", name: "React Portfolio Centralization (RPC-2025)", phase: "Infrastructure Foundation", health: "green", status: "In Progress", completion: 0, budget: 0, spent: 0, lead: "Kareem B.", endDate: "2025-08-19", nextMilestone: "See live task breakdown from PM Dashboard below", linkedApp: "pm-dashboard" },
   ],
   alerts: [
     { id: "1", type: "warning", message: "CERT-2026 certification deadline is approaching (Feb 1, 2026)." },
@@ -502,6 +504,39 @@ let idCounter = 1000;
 function nextId(prefix) { idCounter += 1; return prefix + idCounter; }
 
 function findProject(id) { return state.projects.find(p => p.id === id); }
+
+// --- Cross-app link: pm-dashboard and portfolio-dashboard are both static GitHub Pages
+// apps under kareembullard.github.io, so they share one localStorage origin. If you've
+// opened pm-dashboard in this browser, its data is readable here directly — no server, no
+// API, just same-origin localStorage. Projects with linkedApp: "pm-dashboard" show this live. ---
+function readLinkedPMDashboard() {
+  try {
+    const raw = localStorage.getItem("pm-dashboard:data");
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.phases)) return null;
+    return data;
+  } catch { return null; }
+}
+function pmDashboardStats(data) {
+  let totalTasks = 0, doneTasks = 0, totalHours = 0, loggedHours = 0;
+  const phaseStats = data.phases.map(ph => {
+    const tasks = ph.tasks || [];
+    const done = tasks.filter(t => t.completed).length;
+    totalTasks += tasks.length; doneTasks += done;
+    const hrs = tasks.reduce((a, t) => a + (t.hours || 0), 0);
+    const logged = tasks.reduce((a, t) => a + (t.timeSpent || 0), 0);
+    totalHours += hrs; loggedHours += logged;
+    return { name: ph.name, doneTasks: done, totalTasks: tasks.length, hours: hrs };
+  });
+  return {
+    project: data.project,
+    completion: totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0,
+    totalTasks, doneTasks, totalHours, loggedHours,
+    phases: phaseStats,
+  };
+}
+
 function findAlert(id) { return state.alerts.find(a => a.id === id); }
 function findTask(id) { return state.tasks.find(t => t.id === id); }
 function findKpi(id) { return state.financialKpis.find(k => k.id === id); }
@@ -696,12 +731,17 @@ function projectRow(p) {
   const titleWrap = el("div");
   const main = el("div", "main", p.name);
   main.appendChild(tagEl(healthOf(p.health), "health-" + p.health));
+  if (p.linkedApp === "pm-dashboard") main.appendChild(tagEl("🔗 live", "linked"));
   titleWrap.appendChild(main);
   titleWrap.appendChild(el("div", "meta", p.id + " · " + p.phase + " · " + p.status + " · due " + p.endDate));
   head.appendChild(av);
   head.appendChild(titleWrap);
   left.appendChild(head);
-  left.appendChild(barRow("Completion", p.completion, 100, p.completion + "%", p.completion >= 75 ? "ok" : (p.completion < 30 ? "warn" : "")));
+  const rowCompletion = p.linkedApp === "pm-dashboard" ? (() => {
+    const pmData = readLinkedPMDashboard();
+    return pmData ? pmDashboardStats(pmData).completion : p.completion;
+  })() : p.completion;
+  left.appendChild(barRow("Completion", rowCompletion, 100, rowCompletion + "%", rowCompletion >= 75 ? "ok" : (rowCompletion < 30 ? "warn" : "")));
   const util = p.budget > 0 ? (p.spent / p.budget) * 100 : 0;
   left.appendChild(barRow("Budget", p.spent, Math.max(p.budget, p.spent), money(p.spent) + " / " + money(p.budget), util > 90 ? "over" : "ok"));
   li.appendChild(left);
@@ -927,12 +967,31 @@ function renderProjectDetail(id) {
   grid.appendChild(statCard("End Date", p.endDate));
   app.appendChild(grid);
 
+  const pmData = p.linkedApp === "pm-dashboard" ? readLinkedPMDashboard() : null;
+  const pmStats = pmData ? pmDashboardStats(pmData) : null;
+  const liveCompletion = pmStats ? pmStats.completion : p.completion;
+
   const sec = section("Progress");
-  sec.appendChild(barRow("Completion", p.completion, 100, p.completion + "%", p.completion >= 75 ? "ok" : ""));
+  sec.appendChild(barRow("Completion", liveCompletion, 100, liveCompletion + "%", liveCompletion >= 75 ? "ok" : ""));
   const util = p.budget > 0 ? (p.spent / p.budget) * 100 : 0;
   sec.appendChild(barRow("Budget utilization", p.spent, Math.max(p.budget, p.spent), money(p.spent) + " / " + money(p.budget), util > 90 ? "over" : "ok"));
   sec.appendChild(barRow("Budget used", util, 100, pct(util), util > 90 ? "over" : "ok"));
   app.appendChild(sec);
+
+  if (p.linkedApp === "pm-dashboard") {
+    const linkSec = section("🔗 Live from PM Dashboard");
+    if (pmStats) {
+      linkSec.appendChild(el("p", "sub", (pmStats.project ? pmStats.project.name : p.name) + " · " + pmStats.doneTasks + " of " + pmStats.totalTasks + " tasks complete · " + pmStats.loggedHours + " of " + pmStats.totalHours + " hrs logged"));
+      pmStats.phases.forEach(ph => {
+        const phPct = ph.totalTasks ? Math.round((ph.doneTasks / ph.totalTasks) * 100) : 0;
+        linkSec.appendChild(barRow(ph.name, phPct, 100, ph.doneTasks + "/" + ph.totalTasks + " tasks", phPct >= 75 ? "ok" : ""));
+      });
+    } else {
+      linkSec.appendChild(el("p", "sub", "This project's real task breakdown lives in PM Dashboard, but that data hasn't loaded in this browser yet — open PM Dashboard once (same browser) and this section will sync live from its localStorage automatically. No account, sync server, or manual export needed."));
+    }
+    linkSec.appendChild(button("Open in PM Dashboard →", "btn", () => { window.open("https://kareembullard.github.io/pm-dashboard/", "_blank"); }));
+    app.appendChild(linkSec);
+  }
 
   const ms = section("Next Milestone");
   ms.appendChild(el("p", "sub", p.nextMilestone));
