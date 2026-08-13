@@ -64,6 +64,10 @@
 
   ul.entities { list-style: none; margin: 0; padding: 0; }
   li.entity { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .65rem .9rem; margin-bottom: .5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem; }
+  li.entity.clickable { cursor: pointer; }
+  li.entity.clickable:hover { border-color: var(--accent); }
+  .stat-card.clickable { cursor: pointer; }
+  .stat-card.clickable:hover { border-color: var(--accent); }
   li.entity .main { font-weight: 600; font-size: .92rem; }
   li.entity .meta { font-size: .78rem; color: var(--text-dim); }
   li.entity .actions { display: flex; gap: .4rem; }
@@ -681,8 +685,7 @@ function avgCompletion() {
 }
 
 // ---------- Shared rows ----------
-function projectRow(p, opts) {
-  opts = opts || {};
+function projectRow(p) {
   const li = el("li", "entity");
   const left = el("div", "grow");
   const head = el("div");
@@ -702,15 +705,20 @@ function projectRow(p, opts) {
   const util = p.budget > 0 ? (p.spent / p.budget) * 100 : 0;
   left.appendChild(barRow("Budget", p.spent, Math.max(p.budget, p.spent), money(p.spent) + " / " + money(p.budget), util > 90 ? "over" : "ok"));
   li.appendChild(left);
+  // Projects use a two-step view->edit flow: clicking through to the detail
+  // page (which has real content of its own — KPIs, live PM Dashboard sync,
+  // related tasks) and then "Update Project" there. A separate "Edit" button
+  // on the list row itself would just be a redundant shortcut past that view,
+  // so only "Details" appears here.
   const actions = el("div", "actions");
   actions.appendChild(button("Details", "btn small primary", () => goRoute("project/" + encodeURIComponent(p.id))));
-  if (!opts.noEdit) actions.appendChild(button("Edit", "btn small", () => openProjectForm(p.id)));
   li.appendChild(actions);
   return li;
 }
 
 function taskRow(t) {
-  const li = el("li", "entity");
+  const li = el("li", "entity clickable");
+  li.addEventListener("click", () => openTaskForm(t.id));
   const left = el("div", "grow");
   const main = el("div", "main", t.name);
   main.appendChild(tagEl(t.priority, "pri-" + String(t.priority).toLowerCase()));
@@ -718,8 +726,8 @@ function taskRow(t) {
   left.appendChild(el("div", "meta", t.project + " · due " + t.dueDate));
   li.appendChild(left);
   const actions = el("div", "actions");
-  actions.appendChild(button("Edit", "btn small", () => openTaskForm(t.id)));
-  actions.appendChild(button("Delete", "btn small danger", () => {
+  actions.appendChild(button("Delete", "btn small danger", (e) => {
+    e.stopPropagation();
     if (!confirm("Delete this task?")) return;
     state.tasks = state.tasks.filter(x => x.id !== t.id);
     saveState(); render();
@@ -730,7 +738,8 @@ function taskRow(t) {
 
 const PROJECT_ID_RE = /([A-Z]{3,10}-\d{4})/g;
 function alertRow(a) {
-  const li = el("li", "entity");
+  const li = el("li", "entity clickable");
+  li.addEventListener("click", () => openAlertForm(a.id));
   const left = el("div", "grow");
   const main = el("div", "main");
   main.appendChild(document.createTextNode(ALERT_ICON[a.type] || "•"));
@@ -739,7 +748,10 @@ function alertRow(a) {
   String(a.message).split(PROJECT_ID_RE).forEach(part => {
     const proj = /^[A-Z]{3,10}-\d{4}$/.test(part) ? findProject(part) : null;
     if (proj) {
-      main.appendChild(button(part, "btn link", () => goRoute("project/" + encodeURIComponent(proj.id))));
+      main.appendChild(button(part, "btn link", (e) => {
+        e.stopPropagation();
+        goRoute("project/" + encodeURIComponent(proj.id));
+      }));
     } else if (part) {
       main.appendChild(document.createTextNode(part));
     }
@@ -748,8 +760,8 @@ function alertRow(a) {
   left.appendChild(main);
   li.appendChild(left);
   const actions = el("div", "actions");
-  actions.appendChild(button("Edit", "btn small", () => openAlertForm(a.id)));
-  actions.appendChild(button("Delete", "btn small danger", () => {
+  actions.appendChild(button("Delete", "btn small danger", (e) => {
+    e.stopPropagation();
     if (!confirm("Delete this alert?")) return;
     state.alerts = state.alerts.filter(x => x.id !== a.id);
     saveState(); render();
@@ -1071,9 +1083,8 @@ function renderFinancials() {
   const grid = el("div", "stat-grid");
   state.financialKpis.forEach(k => {
     const card = statCard(k.title, k.value, k.change, k.positive ? "up" : "down");
-    const edit = button("Edit", "btn small", () => openFinancialKpiForm(k.id));
-    edit.style.marginTop = ".5rem";
-    card.appendChild(edit);
+    card.classList.add("clickable");
+    card.addEventListener("click", () => openFinancialKpiForm(k.id));
     grid.appendChild(card);
   });
   app.appendChild(grid);
@@ -1091,14 +1102,15 @@ function renderFinancials() {
   const rul = el("ul", "entities");
   rul.style.marginTop = ".8rem";
   state.revenueData.forEach((r, i) => {
-    const li = el("li", "entity");
+    const li = el("li", "entity clickable");
+    li.addEventListener("click", () => openRevenueForm(i));
     const left = el("div", "grow");
     left.appendChild(el("div", "main", r.name));
     left.appendChild(el("div", "meta", money(r.revenue)));
     li.appendChild(left);
     const actions = el("div", "actions");
-    actions.appendChild(button("Edit", "btn small", () => openRevenueForm(i)));
-    actions.appendChild(button("Delete", "btn small danger", () => {
+    actions.appendChild(button("Delete", "btn small danger", (e) => {
+      e.stopPropagation();
       if (!confirm("Delete this month?")) return;
       state.revenueData.splice(i, 1); saveState(); render();
     }));
@@ -1114,14 +1126,15 @@ function renderFinancials() {
   aul.style.marginTop = ".8rem";
   const allocTotal = state.budgetAllocation.reduce((a, b) => a + Number(b.value || 0), 0);
   state.budgetAllocation.forEach((b, i) => {
-    const li = el("li", "entity");
+    const li = el("li", "entity clickable");
+    li.addEventListener("click", () => openAllocationForm(i));
     const left = el("div", "grow");
     left.appendChild(el("div", "main", b.name));
     left.appendChild(el("div", "meta", b.value + "% of allocated budget"));
     li.appendChild(left);
     const actions = el("div", "actions");
-    actions.appendChild(button("Edit", "btn small", () => openAllocationForm(i)));
-    actions.appendChild(button("Delete", "btn small danger", () => {
+    actions.appendChild(button("Delete", "btn small danger", (e) => {
+      e.stopPropagation();
       if (!confirm("Delete this allocation?")) return;
       state.budgetAllocation.splice(i, 1); saveState(); render();
     }));
