@@ -1,61 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
- <head>
-  <meta charset="utf-8"/>
-  <link href="/vite.svg" rel="icon" type="image/svg+xml"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>
-   Portfolio Management Dashboard
-  </title>
-  <script src="https://cdn.tailwindcss.com">
-  </script>
-  <link href="https://fonts.googleapis.com" rel="preconnect"/>
-  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-  <script>
-   tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              background: '#1F2121',
-              surface: '#262828',
-              primary: '#1FB8CD',
-              'primary-hover': '#1aa7bd',
-              'primary-active': '#158a9b',
-              success: '#46A758',
-              warning: '#E68161',
-              danger: '#B4413C',
-              'text-primary': '#F3F4F6',
-              'text-secondary': '#9CA3AF',
-              border: '#3A3C3C',
-            }
-          }
-        }
-      }
-  </script>
-  <script type="importmap">
-   {
-  "imports": {
-    "react/": "https://esm.sh/react@^19.1.0/",
-    "react": "https://esm.sh/react@^19.1.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
-    "recharts": "https://esm.sh/recharts@^3.1.0",
-    "@google/genai": "https://esm.sh/@google/genai?bundle"
+<head>
+<meta charset="utf-8">
+<title>Portfolio Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Portfolio management demo: project health matrix, financial tracking, operational analytics, a knowledge-base wiki, and a Smart Assistant that answers questions about the portfolio. Single-file web app, no dependencies.">
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --border: #e2e5ea; --text: #1a1d23; --text-dim: #6b7280;
+    --accent: #2563eb; --accent-dim: #dbeafe; --radius: 10px;
+    --ok: #16a34a; --ok-dim: #dcfce7; --warn: #d97706; --warn-dim: #fef3c7; --bad: #dc2626; --bad-dim: #fee2e2;
   }
-}
-  </script>
-  <link href="/index.css" rel="stylesheet"/>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-  
-  
-  
-  
- </head>
- <body>
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1115; --surface: #181b21; --border: #2a2e37; --text: #e5e7eb; --text-dim: #9aa1ad; --accent: #60a5fa; --accent-dim: #1e3a5f; --ok: #4ade80; --ok-dim: #14361f; --warn: #fbbf24; --warn-dim: #3a2c0d; --bad: #f87171; --bad-dim: #3a1414; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 0 0 .6rem; }
+  .sub { color: var(--text-dim); font-size: .92rem; margin: 0 0 1rem; }
+  .privacy-note { font-size: .78rem; color: var(--text-dim); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .6rem .8rem; margin-bottom: 1.25rem; }
+
+  nav.top { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: .8rem; flex-wrap: wrap; }
+  nav.top a { color: var(--text-dim); text-decoration: none; font-size: .88rem; cursor: pointer; }
+  nav.top a.active, nav.top a:hover { color: var(--accent); }
+
+  input[type=search], input[type=text], input[type=email], input[type=number], input[type=date], select, textarea {
+    width: 100%; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); font-size: .9rem; font-family: inherit;
+  }
+
+  .btn { padding: .35rem .8rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: .8rem; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: transparent; font-weight: 600; }
+  .btn.primary:hover { color: #fff; filter: brightness(1.08); }
+  .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+  .btn.small { padding: .2rem .5rem; font-size: .74rem; }
+  .btn.link { border-color: transparent; background: transparent; padding: 0 .2rem; font-weight: 600; text-decoration: underline; font-size: inherit; color: var(--accent); }
+
+  .edit-toolbar { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; font-size: .8rem; color: var(--text-dim); margin-bottom: 1rem; }
+
+  .tag { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: .1rem .55rem; font-size: .74rem; color: var(--text-dim); margin-left: .35rem; }
+  .tag.health-green, .tag.status-ok, .tag.alert-success { background: var(--ok-dim); color: var(--ok); border-color: transparent; }
+  .tag.health-yellow, .tag.status-warn, .tag.alert-warning { background: var(--warn-dim); color: var(--warn); border-color: transparent; }
+  .tag.health-red, .tag.status-bad { background: var(--bad-dim); color: var(--bad); border-color: transparent; }
+  .tag.status-info, .tag.alert-info { background: var(--accent-dim); color: var(--accent); border-color: transparent; }
+  .tag.pri-high { background: var(--bad-dim); color: var(--bad); border-color: transparent; }
+  .tag.pri-medium { background: var(--warn-dim); color: var(--warn); border-color: transparent; }
+  .tag.pri-low { background: var(--ok-dim); color: var(--ok); border-color: transparent; }
+  .count { color: var(--text-dim); font-weight: 400; font-size: .85rem; }
+  .empty { color: var(--text-dim); font-style: italic; font-size: .88rem; padding: .3rem 0; }
+  footer { margin-top: 2.5rem; text-align: center; font-size: .78rem; color: var(--text-dim); }
+  footer a { color: var(--text-dim); }
+
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: .8rem; }
+  .filter-group { min-width: 160px; }
+  .fg-label { display: block; font-size: .74rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .02em; margin-bottom: .3rem; }
+  .pill-scroll { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .pill { border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); border-radius: 999px; padding: .2rem .65rem; font-size: .78rem; cursor: pointer; }
+  .pill.active { background: var(--accent-dim); color: var(--accent); border-color: transparent; font-weight: 600; }
+
+  ul.entities { list-style: none; margin: 0; padding: 0; }
+  li.entity { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .65rem .9rem; margin-bottom: .5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem; }
+  li.entity .main { font-weight: 600; font-size: .92rem; }
+  li.entity .meta { font-size: .78rem; color: var(--text-dim); }
+  li.entity .actions { display: flex; gap: .4rem; }
+  li.entity .grow { flex: 1; min-width: 220px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .9rem 1rem; }
+  .stat-card .num { font-size: 1.5rem; font-weight: 700; }
+  .stat-card .label { font-size: .78rem; color: var(--text-dim); }
+  .stat-card .delta { font-size: .78rem; font-weight: 600; }
+  .stat-card .delta.up { color: var(--ok); }
+  .stat-card .delta.down { color: var(--bad); }
+
+  .section { margin-top: 1.5rem; }
+  .section h2 { font-size: 1.02rem; border-bottom: 2px solid var(--border); padding-bottom: .35rem; margin-bottom: .6rem; }
+
+  .bar-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .5rem; font-size: .82rem; }
+  .bar-row .bar-label { width: 150px; flex-shrink: 0; color: var(--text-dim); }
+  .bar-track { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .bar-fill.ok { background: var(--ok); }
+  .bar-fill.warn { background: var(--warn); }
+  .bar-fill.over { background: var(--bad); }
+  .bar-row .bar-val { width: 110px; text-align: right; flex-shrink: 0; color: var(--text-dim); }
+
+  .avatar { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); font-weight: 700; font-size: .8rem; flex-shrink: 0; }
+
+  .edit-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; }
+  .edit-field { margin-bottom: .9rem; }
+  .edit-field label { display: block; font-size: .78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .02em; margin-bottom: .3rem; }
+  .edit-field.inline { display: flex; align-items: center; gap: .5rem; }
+  .edit-field.inline label { margin: 0; text-transform: none; letter-spacing: 0; font-size: .88rem; color: var(--text); }
+  .edit-row { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .edit-row .edit-field { flex: 1; min-width: 140px; }
+  .edit-actions { display: flex; gap: .6rem; margin-top: 1rem; flex-wrap: wrap; }
+
+  .prose p { margin: 0 0 .8rem; font-size: .9rem; color: var(--text-dim); }
+  .prose ul { margin: 0 0 .8rem; padding-left: 1.2rem; font-size: .9rem; color: var(--text-dim); }
+  .prose li { margin-bottom: .35rem; }
+  .prose h3 { font-size: .95rem; margin: 1rem 0 .4rem; color: var(--text); }
+  .prose strong { color: var(--text); }
+  .prose pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem; overflow-x: auto; font-size: .78rem; line-height: 1.45; }
+  .table-scroll { overflow-x: auto; margin-bottom: .8rem; }
+  table.data { border-collapse: collapse; width: 100%; font-size: .84rem; }
+  table.data th, table.data td { border-bottom: 1px solid var(--border); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  table.data th { color: var(--text); font-weight: 600; white-space: nowrap; }
+  table.data td { color: var(--text-dim); }
+
+  .qa { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem 1rem; margin-bottom: .6rem; }
+  .qa .q { font-weight: 600; font-size: .9rem; margin-bottom: .4rem; }
+  .qa .a-text { font-size: .88rem; color: var(--text-dim); margin-bottom: .5rem; }
+  .ask-row { display: flex; gap: .6rem; align-items: flex-start; flex-wrap: wrap; }
+  .ask-row input { flex: 1; min-width: 200px; }
+</style>
+</head>
+<body>
 <div id="kb-app-nav" style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.5rem 1rem;background:#181b21;color:#e5e7eb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;border-bottom:1px solid #2a2e37;position:relative;z-index:99999;box-sizing:border-box;">
   <a href="https://kareembullard.github.io/" style="color:#e5e7eb;text-decoration:none;font-weight:600;white-space:nowrap;">🏠 Home</a>
   <div style="position:relative;">
@@ -66,6 +129,11 @@
 </div>
 <script>
 (function () {
+  if (window.self !== window.top) {
+    var framedBar = document.getElementById("kb-app-nav");
+    if (framedBar) framedBar.style.display = "none";
+    return;
+  }
   var KB_APPS = [
     { group: "Personal Systems Suite", name: "Systems Catalog Explorer", repo: "systems-catalog-explorer-web" },
     { group: "Personal Systems Suite", name: "Tool Inventory Browser", repo: "tool-inventory-browser-web" },
@@ -129,9 +197,1488 @@
 })();
 </script>
 
-  <div id="root">
-  </div>
-  <script src="/index.tsx" type="module">
-  </script>
- </body>
+<div class="wrap">
+  <h1>📊 Portfolio Dashboard</h1>
+  <p class="sub">Portfolio management with project health tracking, financial reporting, operational analytics, and a Smart Assistant.</p>
+  <div class="privacy-note">This is a portfolio demo. All data (projects, alerts, financials, tasks) is fictional sample data, seeded on first load. Everything is editable — add, edit and delete projects, alerts, revenue months, budget allocations and tasks. Edits save to <em>your</em> browser only (<code>localStorage</code>); nothing is ever sent to a server. Use "Reset demo data" to restore the original demo seed.</div>
+
+  <div class="edit-toolbar" id="edit-toolbar"></div>
+
+  <nav class="top" id="top-nav">
+    <a data-route="dashboard">Dashboard</a>
+    <a data-route="projects">Projects</a>
+    <a data-route="financials">Financials</a>
+    <a data-route="analytics">Analytics</a>
+    <a data-route="assistant">Smart Assistant</a>
+    <a data-route="wiki">Wiki</a>
+    <a data-route="settings">Settings</a>
+  </nav>
+
+  <div id="app"></div>
+
+  <footer>
+    Part of <a href="https://kareembullard.github.io/">Kareem Bullard's app portfolio</a>. Source: <a href="https://github.com/kareembullard/portfolio-dashboard" target="_blank" rel="noopener">portfolio-dashboard</a>.
+  </footer>
+</div>
+
+<script>
+const STORAGE_KEY = "portfolio-dashboard:data";
+
+const HEALTHS = ["green", "yellow", "red"];
+const HEALTH_LABEL = { green: "On Track", yellow: "At Risk", red: "Off Track" };
+const STATUSES = ["On Track", "At Risk", "Off Track", "Completed", "Behind Schedule", "Ahead of Schedule", "Planning", "In Progress"];
+const PRIORITIES = ["High", "Medium", "Low"];
+const ALERT_TYPES = ["warning", "info", "success"];
+const ALERT_ICON = { warning: "⚠️", info: "ℹ️", success: "✅" };
+
+const SEED = {
+  projects: [
+    { id: "GDCCSI-2025", name: "Gem Dropper's Content Initiative", phase: "Network, Conduct", health: "green", status: "On Track", completion: 65, budget: 3500, spent: 2100, lead: "Kareem B.", endDate: "2025-06-31", nextMilestone: "Finalize Ebook Task Lists" },
+    { id: "SALES-2025", name: "Digital Products Sales Target", phase: "Conduct, Control", health: "green", status: "On Track", completion: 83, budget: 1000, spent: 450, lead: "Kareem B.", endDate: "2025-07-01", nextMilestone: "Final Q3 Push" },
+    { id: "CANNON-2025", name: "Get in the Cannon Project", phase: "Market, Conduct", health: "green", status: "In Progress", completion: 40, budget: 5000, spent: 1500, lead: "Kareem B.", endDate: "2025-12-31", nextMilestone: "MVP Launch" },
+    { id: "NCA-2025", name: "Networking & Client Acquisition", phase: "Conduct", health: "green", status: "In Progress", completion: 50, budget: 2500, spent: 1000, lead: "Kareem B.", endDate: "2025-12-31", nextMilestone: "Sign 5 New Clients" },
+    { id: "AMLS-2025", name: "Airtable Multi-Layered System", phase: "Setup", health: "green", status: "On Track", completion: 90, budget: 1200, spent: 1100, lead: "Kareem B.", endDate: "2025-08-30", nextMilestone: "Deploy Dashboard v1" },
+    { id: "MEMOIR-2025", name: "Memoir Writing", phase: "Document, Develop", health: "green", status: "In Progress", completion: 15, budget: 500, spent: 50, lead: "Kareem B.", endDate: "2026-12-31", nextMilestone: "Complete First Draft" },
+    { id: "CREATIVE-2025", name: "Creative Resurgence Epic", phase: "Conduct", health: "green", status: "On Track", completion: 70, budget: 3000, spent: 1800, lead: "Kareem B.", endDate: "2025-12-31", nextMilestone: "Gallery Showcase" },
+    { id: "CERT-2026", name: "Professional Certifications Renewal", phase: "Conduct, Educate", health: "yellow", status: "At Risk", completion: 20, budget: 800, spent: 150, lead: "Kareem B.", endDate: "2026-02-01", nextMilestone: "Pass CompTIA A+ Exam" },
+    { id: "Suno-EXP-2025", name: "Suno Export & Music Management", phase: "Conduct", health: "green", status: "On Track", completion: 55, budget: 2000, spent: 900, lead: "Kareem B.", endDate: "2025-12-31", nextMilestone: "Release 10 Edited Tracks" },
+    { id: "TMB-2025", name: "Automation & Bot Development", phase: "Develop, Setup", health: "green", status: "In Progress", completion: 45, budget: 1500, spent: 600, lead: "Kareem B.", endDate: "2025-11-30", nextMilestone: "Deploy Task Merging Bot" },
+    { id: "CH7-BK-2025", name: "Financial Management (CH7-BK-2025)", phase: "Setup, Conduct", health: "yellow", status: "At Risk", completion: 30, budget: 2000, spent: 1800, lead: "Kareem B.", endDate: "2025-12-31", nextMilestone: "Finalize Bankruptcy Process" },
+  ],
+  alerts: [
+    { id: "1", type: "warning", message: "CERT-2026 certification deadline is approaching (Feb 1, 2026)." },
+    { id: "2", type: "warning", message: "CH7-BK-2025 has high budget utilization. Review spending." },
+    { id: "3", type: "success", message: "AMLS-2025 is ahead of schedule - early completion expected." },
+  ],
+  revenueData: [
+    { name: "Jan", revenue: 150 },
+    { name: "Feb", revenue: 320 },
+    { name: "Mar", revenue: 580 },
+    { name: "Apr", revenue: 950 },
+    { name: "May", revenue: 1250 },
+    { name: "Jun", revenue: 2100 },
+    { name: "Jul", revenue: 4150 },
+  ],
+  budgetAllocation: [
+    { name: "Content (GDCCSI)", value: 25 },
+    { name: "Marketing (CANNON)", value: 35 },
+    { name: "Systems (AMLS, TMB)", value: 20 },
+    { name: "Creative (Suno, CREATIVE)", value: 15 },
+    { name: "Other", value: 5 },
+  ],
+  financialKpis: [
+    { id: "FK1", title: "Total Revenue", value: "$1.2M", change: "+12.5%", positive: true },
+    { id: "FK2", title: "Total Expenses", value: "$750K", change: "+8.2%", positive: false },
+    { id: "FK3", title: "Net Profit", value: "$450K", change: "+18.3%", positive: true },
+    { id: "FK4", title: "ROI", value: "60%", change: "+5.1%", positive: true },
+  ],
+  tasks: [
+    { id: "47", name: "CompTIA A+ ce Certification Renewal", project: "CERT-2026", dueDate: "2026-02-01", priority: "High" },
+    { id: "50", name: "CompTIA Security+ ce Certification Renewal", project: "CERT-2026", dueDate: "2026-02-01", priority: "High" },
+    { id: "331", name: "Develop first ebook task lists", project: "GDCCSI-2025", dueDate: "2025-06-31", priority: "High" },
+    { id: "1136", name: "Complete My Monthly Review", project: "Personal", dueDate: "2025-08-01", priority: "Medium" },
+    { id: "1173", name: "Meal Prep Veggies Every Sunday", project: "Personal", dueDate: "2025-07-27", priority: "Medium" },
+    { id: "96", name: "Prospect Freelance Listings", project: "NCA-2025", dueDate: "2025-07-26", priority: "High" },
+    { id: "70", name: "Write Memoir (Church Memories)", project: "MEMOIR-2025", dueDate: "2025-07-27", priority: "Low" },
+    { id: "53", name: "Organize/Export Suno Creations", project: "Suno-EXP-2025", dueDate: "2025-12-31", priority: "Medium" },
+  ],
+  settings: {
+    portfolioHealth: 8.1,
+    revenueTarget: 5000,
+    currentRevenue: 4150,
+    resourceUtilization: 87,
+    profileName: "John Doe",
+    profileEmail: "john.doe@example.com",
+    notifyProjectUpdates: true,
+    notifyCriticalAlerts: true,
+    notifyWeeklyReports: false,
+  },
+};
+
+// ---------- Wiki (static reference content, ported from the original Knowledge Base page) ----------
+const WIKI = [
+  {
+    id: "master-blueprint", icon: "🚀", nav: "Mastering Your Workflow",
+    title: "Mastering Your Workflow: A Comprehensive Blueprint",
+    subtitle: "A guide for unrivaled productivity and well-being.",
+    sections: [
+      { title: "Introduction: From Tangle to Triumph", blocks: [
+        { t: "p", text: "Have you ever stared at your to-do list, coffee in hand, and felt completely lost, despite meticulously tracking every task? The dream of a beautifully automated dashboard, connecting your daily efforts to your grandest ambitions, often feels just out of reach. If that story sounds familiar, you're in the right place. Our journey together will bridge that gap, transforming your workflow from a mere list into a dynamic, multi-layered productivity engine." },
+      ]},
+      { title: "Objectives for Your Workflow Mastery", blocks: [
+        { t: "ul", items: [
+          { text: "Transform your existing Airtable base, or similar system, from a flat list of to-dos into a dynamic, multi-layered productivity engine." },
+          { text: "Track your daily actions and automatically aggregate them into insightful weekly, monthly, and even yearly reviews." },
+          { text: "Build a sophisticated, automated system that provides a clear, hierarchical view of your productivity." },
+          { text: "Enhance your overall schedule by leveraging recurring tasks for consistency, prioritizing around critical deadlines, integrating personal well-being, and harnessing the power of automation and bots." },
+        ]},
+      ]},
+      { title: "Key Takeaways for Your Productive Journey", blocks: [
+        { t: "ul", items: [
+          { b: "Structured Productivity:", text: "Your system utilizes a clear, multi-phase operational framework that guides all activities from ideation to completion and beyond." },
+          { b: "Project-Driven Approach:", text: "Every significant endeavor is treated as a defined project with specific goals, often broken down into detailed sub-tasks and timelines." },
+          { b: "Automation and Technological Leverage:", text: "There's an extensive reliance on and ambition for AI, bots, and integrated software systems (like Airtable, Notion, TickTick, Obsidian) to enhance efficiency and streamline processes." },
+          { b: "Continuous Improvement:", text: "The workflow emphasizes reviewing, optimizing, and documenting processes to ensure constant refinement and growth." },
+          { b: "Holistic Development:", text: "Your system masterfully integrates business, career, personal health, education, and leisure pursuits into a unified, sustainable system." },
+        ]},
+      ]},
+    ],
+  },
+  {
+    id: "project-charter", icon: "📜", nav: "Project Charter",
+    title: "Project Charter: Unified Workflow and Strategic Initiatives",
+    subtitle: "The master blueprint for managing diverse personal and professional pursuits.",
+    sections: [
+      { title: "Project Purpose", blocks: [
+        { t: "p", text: "The overarching purpose of this workflow is to systematically manage a diverse array of personal development, business, career, health, and creative pursuits by leveraging a structured, phase-based approach and advanced technological integrations. It aims to transform daily efforts into measurable progress towards grand ambitions, ensuring consistency, efficiency, and holistic well-being." },
+      ]},
+      { title: "High-Level Project Objectives", blocks: [
+        { t: "ul", items: [
+          { b: "Structured Productivity:", text: "Implement a clear, multi-phase operational framework (Ideate, Scope, Research, Setup, Develop, Conduct, Review, Optimize, Control, Document, Educate, Resource, Network, Market, Finance, Leisure/Entertainment) to guide all activities." },
+          { b: "Project-Driven Approach:", text: "Manage defined projects with specific goals, detailed sub-tasks, and clear timelines." },
+          { b: "Automation and Technological Leverage:", text: "Extensively use and develop AI, bots, and integrated software systems (e.g., Airtable, Notion, TickTick, Obsidian) to enhance efficiency, reduce manual effort, and ensure data consistency." },
+          { b: "Continuous Improvement:", text: "Emphasize regular reviewing, optimizing, and documenting of processes for enhanced performance and quality." },
+          { b: "Holistic Development:", text: "Integrate and manage personal health, education, and leisure pursuits as integral parts of the overall system." },
+        ]},
+      ]},
+      { title: "Key Projects and Initiatives", blocks: [
+        { t: "p", text: "The workflow orchestrates numerous strategic initiatives, including:" },
+        { t: "ul", items: [
+          { b: "Creative Resurgence Epic (RAPP-001):", text: "Ongoing weekly creative output." },
+          { b: "Gem Dropper's Content Creation and Sharing Initiative (GDCCSI) Project:", text: "Includes developing the first ebook, creating holiday posts, and launching a website/webstore." },
+          { b: "Sales - $5,000 worth of digital products by July 1, 2025:", text: "A direct sales objective." },
+          { b: "Setup Airtable for a Multi-Layered Productivity System:", text: "A major project to transform Airtable into a dynamic, automated productivity engine." },
+          { b: "Suno Export and Music Management (Suno-EXP-2025) Project:", text: "Focusing on organizing, processing, producing, editing, and sharing Suno-generated music." },
+          { b: "Professional Certifications:", text: "Proactive renewal of CompTIA A+ ce and Security+ ce certifications." },
+        ]},
+      ]},
+    ],
+  },
+  {
+    id: "scope-statement", icon: "🎯", nav: "Scope Statement",
+    title: "Scope Statement: Unified Workflow and Strategic Initiatives",
+    subtitle: "Defining the boundaries and deliverables of the project.",
+    sections: [
+      { title: "Project Purpose", blocks: [
+        { t: "p", text: "The overarching purpose of this workflow is to systematically manage a diverse array of personal development, business, career, health, and creative pursuits by leveraging a structured, phase-based approach and advanced technological integrations. It aims to transform daily efforts into measurable progress towards grand ambitions, ensuring consistency, efficiency, and holistic well-being." },
+      ]},
+      { title: "Project Deliverables", blocks: [
+        { t: "p", text: "The workflow is designed to produce a wide range of tangible and intangible outputs across its various initiatives:" },
+        { t: "ul", items: [
+          { b: "New Applications and Customizations:", text: "Including a customized Routinery App and other self-built applications." },
+          { b: "Content and Publications:", text: "Such as the first Ebook and its associated content/task lists, memoir content, and a memoir app for voice input." },
+          { b: "Music Productions:", text: "Organized, edited, and shared Suno music creations, and a Suno data scraping tool." },
+          { b: "Automated Productivity Systems:", text: "A functional, automated Airtable multi-layered productivity system." },
+          { b: "Bots and Automations:", text: "Various bots including a Task Merging Bot, Batch Researching Bot, and Hashtag Bot for bulk task additions." },
+          { b: "Professional Credentials:", text: "Completed professional certifications, specifically the CompTIA A+ ce and Security+ ce renewals." },
+        ]},
+      ]},
+      { title: "High-Level Constraints", blocks: [
+        { t: "ul", items: [
+          { b: "Fixed Deadlines:", text: "Specific external deadlines, particularly for certifications and sales targets." },
+          { b: "Time Allocation:", text: "Estimated durations for tasks imply time-based constraints on available capacity." },
+          { b: "Resource Availability:", text: "Financial and other resources, such as AI credits, are finite." },
+        ]},
+      ]},
+    ],
+  },
+  {
+    id: "wbs", icon: "🏗️", nav: "Work Breakdown Structure",
+    title: "Work Breakdown Structure (WBS)",
+    subtitle: "A hierarchical decomposition of the total scope of work.",
+    sections: [
+      { title: "WBS Overview", blocks: [
+        { t: "p", text: "A Work Breakdown Structure (WBS) is a hierarchical decomposition of the total scope of work to be carried out by the project team to accomplish project objectives and create the required deliverables. It breaks down the work into smaller, more manageable components." },
+        { t: "code", text: "1.0 Unified Workflow and Strategic Initiatives\n  1.1 Business Initiatives\n    1.1.1 Gem Dropper's Content Creation (GDCCSI)\n    1.1.2 Sales - $5,000 Digital Products\n    1.1.3 Get in the Cannon Project\n    1.1.4 Networking & Client Acquisition\n    1.1.5 Freelance Prospecting\n  1.2 Personal Development & Well-being\n    1.2.1 Memoir Writing\n    1.2.2 Creative Resurgence Epic\n    1.2.3 Professional Certifications Renewal\n    1.2.4 Health & Diet Management\n  1.3 System Development & Maintenance\n    1.3.1 Airtable Productivity System Setup\n    1.3.2 Custom Productivity Apps Development\n    1.3.3 Suno Export & Music Management\n    1.3.4 Automation & Bot Development\n  1.4 Financial Management\n    1.4.1 Bankruptcy Process (CH7-BK-2025)\n    1.4.2 Budget & Financial Control" },
+      ]},
+      { title: "WBS Dictionary Example", blocks: [
+        { t: "h3", text: "1.1.1 Gem Dropper's Content Creation and Sharing Initiative (GDCCSI)" },
+        { t: "ul", items: [
+          { b: "Description:", text: "An ongoing high-value project focused on content creation and sharing. It involves developing and finalizing an ebook, considering holiday posts, and exploring Substack as an outlet for articles." },
+          { b: "Deliverables:", text: "First Ebook (CFE-2025) Project, finalized ebook task lists, potential holiday posts, and a launched website & webstore." },
+          { b: "Phase(s):", text: "Network, Conduct." },
+          { b: "Timeline/Frequency:", text: "Sub-tasks include finalizing ebook task lists by June 31, 2025." },
+        ]},
+      ]},
+    ],
+  },
+  {
+    id: "operational-phases", icon: "🌊", nav: "Operational Phases",
+    title: "Operational Phases Blueprint",
+    subtitle: "A comprehensive workflow from ideation to completion.",
+    sections: [
+      { title: "The 16 Phases", blocks: [
+        { t: "p", text: "The workflow blueprint categorizes tasks and projects into 16 distinct operational phases, guiding them from initial conception to ongoing maintenance and improvement." },
+        { t: "table", headers: ["Phase", "Description"], rows: [
+          ["Ideate", "Brainstorming, concept generation, and considering new ideas."],
+          ["Scope", "Defining the boundaries, goals, and initial plans for ideas."],
+          ["Research", "Gathering necessary information, exploring tools, and investigating topics."],
+          ["Setup", "Preparing the necessary infrastructure, tools, or initial configurations."],
+          ["Develop", "The creation and building phase for applications, content, or processes."],
+          ["Conduct", "The active execution phase where operations and projects are carried out."],
+          ["Review", "Evaluating existing items, processes, or performance."],
+          ["Optimize", "Improving the efficiency, performance, or quality of existing systems."],
+          ["Control", "Managing, monitoring, and ensuring adherence to plans."],
+          ["Document", "Creating and updating records, guides, and written materials."],
+          ["Educate", "Dedicated to learning, skill development, and knowledge acquisition."],
+          ["Resource", "Acquiring necessary items or resources."],
+          ["Network", "Building and maintaining connections, both professional and social."],
+          ["Market", "Concerned with promotion, sales, and outreach."],
+          ["Finance", "Managing financial aspects and budgeting."],
+          ["Leisure", "Covering personal activities, recreation, and entertainment."],
+        ]},
+      ]},
+    ],
+  },
+  {
+    id: "project-timelines", icon: "🗓️", nav: "Project Timelines",
+    title: "Project Timelines and Phase Overview",
+    subtitle: "A roadmap for each initiative with key dates and phases.",
+    sections: [
+      { title: "Key Timelines and Frequencies", blocks: [
+        { t: "ul", items: [
+          { b: "Conduct - Creative Resurgence Epic:", text: "Weekly on Saturdays and Sundays, 8 hours per instance, started July 24, 2025." },
+          { b: "Conduct - Get in the Cannon Project:", text: "Daily, every two days, skipping weekends, 8 hours, started July 24, 2025." },
+          { b: "Conduct - Networking & Client Acquisition:", text: "Daily, every two days, 8 hours, started July 24, 2025." },
+          { b: "Conduct - Sales - $5,000 by July 1, 2025:", text: "Goal was by July 1, 2025, with an entry date of July 24, 2025, suggesting ongoing review." },
+          { b: "CompTIA Certifications (A+ and Security+):", text: "Both have a renewal due date of February 1, 2026, indicating a long-term educational commitment." },
+          { b: "Write - Memoir:", text: "Daily, every three days, 8 hours, started July 24, 2025." },
+        ]},
+      ]},
+    ],
+  },
+];
+
+// ---------- State ----------
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return clone(SEED);
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.projects || !parsed.alerts || !parsed.tasks || !parsed.settings) return clone(SEED);
+    return parsed;
+  } catch (e) { return clone(SEED); }
+}
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
+function resetState() { state = clone(SEED); saveState(); render(); }
+
+let state = loadState();
+let idCounter = 1000;
+function nextId(prefix) { idCounter += 1; return prefix + idCounter; }
+
+function findProject(id) { return state.projects.find(p => p.id === id); }
+function findAlert(id) { return state.alerts.find(a => a.id === id); }
+function findTask(id) { return state.tasks.find(t => t.id === id); }
+function findKpi(id) { return state.financialKpis.find(k => k.id === id); }
+function initials(name) { return String(name || "?").split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase(); }
+function money(n) { return "$" + Number(n || 0).toLocaleString(); }
+function pct(n) { return Math.round(n) + "%"; }
+function healthOf(h) { return HEALTH_LABEL[h] || h; }
+
+const app = document.getElementById("app");
+const topNav = document.getElementById("top-nav");
+
+function goRoute(route) {
+  const target = "#/" + route;
+  // Assigning an identical hash fires no hashchange event, so re-render directly.
+  if (location.hash === target) render();
+  else location.hash = target;
+}
+
+// ---------- Small DOM helpers ----------
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined && text !== null) n.textContent = String(text);
+  return n;
+}
+function button(label, cls, onClick) {
+  const b = el("button", cls || "btn", label);
+  b.type = "button";
+  if (onClick) b.addEventListener("click", onClick);
+  return b;
+}
+function tagEl(text, cls) { return el("span", "tag" + (cls ? " " + cls : ""), text); }
+function emptyMsg(text) { return el("div", "empty", text); }
+function heading(text, count) {
+  const h = el("h2", null, text);
+  if (count !== undefined && count !== null) {
+    h.appendChild(document.createTextNode(" "));
+    h.appendChild(el("span", "count", "(" + count + ")"));
+  }
+  return h;
+}
+function section(title) {
+  const s = el("div", "section");
+  s.appendChild(el("h2", null, title));
+  return s;
+}
+function statCard(label, num, delta, deltaCls) {
+  const card = el("div", "stat-card");
+  card.appendChild(el("div", "num", num));
+  card.appendChild(el("div", "label", label));
+  if (delta) card.appendChild(el("div", "delta" + (deltaCls ? " " + deltaCls : ""), delta));
+  return card;
+}
+function barRow(label, val, max, valText, fillCls) {
+  const row = el("div", "bar-row");
+  row.appendChild(el("span", "bar-label", label));
+  const track = el("span", "bar-track");
+  const fill = el("span", "bar-fill" + (fillCls ? " " + fillCls : ""));
+  const width = max > 0 ? (val / max) * 100 : 0;
+  fill.style.width = Math.max(0, Math.min(100, Math.round(width))) + "%";
+  track.appendChild(fill);
+  row.appendChild(track);
+  row.appendChild(el("span", "bar-val", valText));
+  return row;
+}
+function field(label, input) {
+  const f = el("div", "edit-field");
+  f.appendChild(el("label", null, label));
+  f.appendChild(input);
+  return f;
+}
+function textInput(value, type) {
+  const i = document.createElement("input");
+  i.type = type || "text";
+  i.value = value === undefined || value === null ? "" : String(value);
+  return i;
+}
+function selectInput(values, selected, labelFn) {
+  const s = document.createElement("select");
+  values.forEach(v => {
+    const o = document.createElement("option");
+    o.value = String(v);
+    o.textContent = labelFn ? labelFn(v) : String(v);
+    if (String(v) === String(selected)) o.selected = true;
+    s.appendChild(o);
+  });
+  return s;
+}
+function pillGroup(label, values, stateSet, onChange, labelFn) {
+  const group = el("div", "filter-group");
+  group.appendChild(el("span", "fg-label", label));
+  const scroll = el("div", "pill-scroll");
+  values.forEach(v => {
+    const pill = el("button", "pill" + (stateSet.has(v) ? " active" : ""), labelFn ? labelFn(v) : v);
+    pill.type = "button";
+    pill.addEventListener("click", () => {
+      if (stateSet.has(v)) stateSet.delete(v); else stateSet.add(v);
+      pill.classList.toggle("active");
+      onChange();
+    });
+    scroll.appendChild(pill);
+  });
+  group.appendChild(scroll);
+  return group;
+}
+
+// ---------- Routing ----------
+function render() {
+  const parts = (location.hash || "").replace(/^#\/?/, "").split("/");
+  const route = parts[0] || "dashboard";
+  const arg = parts[1] ? decodeURIComponent(parts[1]) : null;
+  const navRoute = route === "project" ? "projects" : route;
+  Array.prototype.slice.call(topNav.children).forEach(a => {
+    if (a.dataset.route === navRoute) a.classList.add("active"); else a.classList.remove("active");
+  });
+  if (route === "dashboard") renderDashboard();
+  else if (route === "projects") renderProjects();
+  else if (route === "project") renderProjectDetail(arg);
+  else if (route === "financials") renderFinancials();
+  else if (route === "analytics") renderAnalytics();
+  else if (route === "assistant") renderAssistant();
+  else if (route === "wiki") renderWiki();
+  else if (route === "settings") renderSettings();
+  else renderDashboard();
+  renderEditToolbar();
+}
+
+Array.prototype.slice.call(topNav.children).forEach(a => {
+  a.addEventListener("click", () => goRoute(a.dataset.route));
+});
+window.addEventListener("hashchange", render);
+
+// ---------- Export / Import / Reset ----------
+function renderEditToolbar() {
+  const bar = document.getElementById("edit-toolbar");
+  bar.innerHTML = "";
+  const exportBtn = button("Export data", "btn", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "portfolio-dashboard-data.json"; a.click();
+    URL.revokeObjectURL(url);
+  });
+  const fileInput = document.createElement("input");
+  fileInput.type = "file"; fileInput.accept = "application/json"; fileInput.style.display = "none";
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (parsed && parsed.projects && parsed.alerts && parsed.tasks && parsed.settings) { state = parsed; saveState(); render(); }
+        else alert("That file doesn't look like portfolio-dashboard data.");
+      } catch (e) { alert("Couldn't parse that file."); }
+    };
+    reader.readAsText(file);
+  });
+  const importBtn = button("Import data", "btn", () => fileInput.click());
+  const resetBtn = button("Reset demo data", "btn danger", () => {
+    if (confirm("Reset all data back to the original demo seed?")) resetState();
+  });
+  bar.appendChild(exportBtn);
+  bar.appendChild(importBtn);
+  bar.appendChild(fileInput);
+  bar.appendChild(resetBtn);
+}
+
+// ---------- Derived portfolio numbers ----------
+function healthCounts() {
+  return {
+    green: state.projects.filter(p => p.health === "green").length,
+    yellow: state.projects.filter(p => p.health === "yellow").length,
+    red: state.projects.filter(p => p.health === "red").length,
+  };
+}
+function totalBudget() { return state.projects.reduce((a, p) => a + Number(p.budget || 0), 0); }
+function totalSpent() { return state.projects.reduce((a, p) => a + Number(p.spent || 0), 0); }
+function avgCompletion() {
+  if (!state.projects.length) return 0;
+  return state.projects.reduce((a, p) => a + Number(p.completion || 0), 0) / state.projects.length;
+}
+
+// ---------- Shared rows ----------
+function projectRow(p, opts) {
+  opts = opts || {};
+  const li = el("li", "entity");
+  const left = el("div", "grow");
+  const head = el("div");
+  head.style.display = "flex";
+  head.style.alignItems = "center";
+  head.style.gap = ".5rem";
+  const av = el("span", "avatar", initials(p.name));
+  const titleWrap = el("div");
+  const main = el("div", "main", p.name);
+  main.appendChild(tagEl(healthOf(p.health), "health-" + p.health));
+  titleWrap.appendChild(main);
+  titleWrap.appendChild(el("div", "meta", p.id + " · " + p.phase + " · " + p.status + " · due " + p.endDate));
+  head.appendChild(av);
+  head.appendChild(titleWrap);
+  left.appendChild(head);
+  left.appendChild(barRow("Completion", p.completion, 100, p.completion + "%", p.completion >= 75 ? "ok" : (p.completion < 30 ? "warn" : "")));
+  const util = p.budget > 0 ? (p.spent / p.budget) * 100 : 0;
+  left.appendChild(barRow("Budget", p.spent, Math.max(p.budget, p.spent), money(p.spent) + " / " + money(p.budget), util > 90 ? "over" : "ok"));
+  li.appendChild(left);
+  const actions = el("div", "actions");
+  actions.appendChild(button("Details", "btn small primary", () => goRoute("project/" + encodeURIComponent(p.id))));
+  if (!opts.noEdit) actions.appendChild(button("Edit", "btn small", () => openProjectForm(p.id)));
+  li.appendChild(actions);
+  return li;
+}
+
+function taskRow(t) {
+  const li = el("li", "entity");
+  const left = el("div", "grow");
+  const main = el("div", "main", t.name);
+  main.appendChild(tagEl(t.priority, "pri-" + String(t.priority).toLowerCase()));
+  left.appendChild(main);
+  left.appendChild(el("div", "meta", t.project + " · due " + t.dueDate));
+  li.appendChild(left);
+  const actions = el("div", "actions");
+  actions.appendChild(button("Edit", "btn small", () => openTaskForm(t.id)));
+  actions.appendChild(button("Delete", "btn small danger", () => {
+    if (!confirm("Delete this task?")) return;
+    state.tasks = state.tasks.filter(x => x.id !== t.id);
+    saveState(); render();
+  }));
+  li.appendChild(actions);
+  return li;
+}
+
+const PROJECT_ID_RE = /([A-Z]{3,10}-\d{4})/g;
+function alertRow(a) {
+  const li = el("li", "entity");
+  const left = el("div", "grow");
+  const main = el("div", "main");
+  main.appendChild(document.createTextNode(ALERT_ICON[a.type] || "•"));
+  main.appendChild(document.createTextNode(" "));
+  // Linkify project ids inside the message, as the original Alerts component did.
+  String(a.message).split(PROJECT_ID_RE).forEach(part => {
+    const proj = /^[A-Z]{3,10}-\d{4}$/.test(part) ? findProject(part) : null;
+    if (proj) {
+      main.appendChild(button(part, "btn link", () => goRoute("project/" + encodeURIComponent(proj.id))));
+    } else if (part) {
+      main.appendChild(document.createTextNode(part));
+    }
+  });
+  main.appendChild(tagEl(a.type, "alert-" + a.type));
+  left.appendChild(main);
+  li.appendChild(left);
+  const actions = el("div", "actions");
+  actions.appendChild(button("Edit", "btn small", () => openAlertForm(a.id)));
+  actions.appendChild(button("Delete", "btn small danger", () => {
+    if (!confirm("Delete this alert?")) return;
+    state.alerts = state.alerts.filter(x => x.id !== a.id);
+    saveState(); render();
+  }));
+  li.appendChild(actions);
+  return li;
+}
+
+// ---------- Dashboard ----------
+function renderDashboard() {
+  app.innerHTML = "";
+  const counts = healthCounts();
+  const s = state.settings;
+
+  const grid = el("div", "stat-grid");
+  grid.appendChild(statCard("Portfolio Health", Number(s.portfolioHealth).toFixed(1), "Good", "up"));
+  grid.appendChild(statCard("Revenue Progress", money(s.currentRevenue), "Target " + money(s.revenueTarget)));
+  grid.appendChild(statCard("On Track", counts.green));
+  grid.appendChild(statCard("At Risk", counts.yellow));
+  grid.appendChild(statCard("Critical", counts.red));
+  grid.appendChild(statCard("Resource Utilization", s.resourceUtilization + "%"));
+  app.appendChild(grid);
+
+  const gauges = section("Portfolio Gauges");
+  gauges.appendChild(barRow("Health score", s.portfolioHealth, 10, Number(s.portfolioHealth).toFixed(1) + " / 10", "ok"));
+  const revPct = s.revenueTarget > 0 ? (s.currentRevenue / s.revenueTarget) * 100 : 0;
+  gauges.appendChild(barRow("Revenue vs target", s.currentRevenue, s.revenueTarget, money(s.currentRevenue) + " / " + money(s.revenueTarget), revPct >= 80 ? "ok" : "warn"));
+  gauges.appendChild(barRow("Resource use", s.resourceUtilization, 100, s.resourceUtilization + "%", s.resourceUtilization > 90 ? "over" : ""));
+  gauges.appendChild(barRow("Avg completion", avgCompletion(), 100, pct(avgCompletion())));
+  app.appendChild(gauges);
+
+  const alertsSec = section("Critical Alerts");
+  alertsSec.appendChild(button("+ New Alert", "btn primary", () => openAlertForm(null)));
+  const aul = el("ul", "entities");
+  aul.style.marginTop = ".8rem";
+  if (!state.alerts.length) alertsSec.appendChild(emptyMsg("No alerts."));
+  state.alerts.forEach(a => aul.appendChild(alertRow(a)));
+  alertsSec.appendChild(aul);
+  app.appendChild(alertsSec);
+
+  const projSec = section("Active Projects");
+  const search = textInput("", "search");
+  search.placeholder = "Search projects by name or ID…";
+  projSec.appendChild(search);
+  const pul = el("ul", "entities");
+  pul.style.marginTop = ".8rem";
+  projSec.appendChild(pul);
+  const noMatch = emptyMsg("No projects match your search.");
+  noMatch.style.display = "none";
+  projSec.appendChild(noMatch);
+  function drawProjects() {
+    const q = search.value.trim().toLowerCase();
+    pul.innerHTML = "";
+    const list = state.projects.filter(p =>
+      !q || p.name.toLowerCase().indexOf(q) !== -1 || p.id.toLowerCase().indexOf(q) !== -1);
+    noMatch.style.display = list.length ? "none" : "block";
+    list.forEach(p => pul.appendChild(projectRow(p)));
+  }
+  search.addEventListener("input", drawProjects);
+  drawProjects();
+  app.appendChild(projSec);
+
+  app.appendChild(revenueSection());
+  app.appendChild(allocationSection());
+}
+
+function revenueSection() {
+  const sec = section("Revenue Tracking");
+  const max = Math.max.apply(null, state.revenueData.map(r => Number(r.revenue) || 0).concat([1]));
+  if (!state.revenueData.length) sec.appendChild(emptyMsg("No revenue data yet."));
+  state.revenueData.forEach(r => sec.appendChild(barRow(r.name, r.revenue, max, money(r.revenue))));
+  return sec;
+}
+function allocationSection() {
+  const sec = section("Budget Allocation");
+  const max = Math.max.apply(null, state.budgetAllocation.map(b => Number(b.value) || 0).concat([1]));
+  if (!state.budgetAllocation.length) sec.appendChild(emptyMsg("No allocations yet."));
+  state.budgetAllocation.forEach(b => sec.appendChild(barRow(b.name, b.value, max, b.value + "%")));
+  return sec;
+}
+
+// ---------- Projects ----------
+const projectFilters = { health: new Set(), status: new Set(), query: "", sort: "name" };
+
+function renderProjects() {
+  app.innerHTML = "";
+  app.appendChild(heading("Projects", state.projects.length));
+
+  const search = textInput(projectFilters.query, "search");
+  search.placeholder = "Search projects, phases, statuses…";
+  app.appendChild(search);
+
+  const filterBar = el("div", "filter-bar");
+  filterBar.style.marginTop = ".8rem";
+  app.appendChild(filterBar);
+  filterBar.appendChild(pillGroup("Health", HEALTHS, projectFilters.health, () => draw(), h => HEALTH_LABEL[h]));
+  filterBar.appendChild(pillGroup("Status", STATUSES, projectFilters.status, () => draw()));
+
+  const sortGroup = el("div", "filter-group");
+  sortGroup.appendChild(el("span", "fg-label", "Sort by"));
+  const sortSelect = selectInput(["name", "completion", "endDate", "budget"], projectFilters.sort, v => ({
+    name: "Project Name", completion: "Completion %", endDate: "Due Date", budget: "Budget",
+  })[v]);
+  sortSelect.addEventListener("change", () => { projectFilters.sort = sortSelect.value; draw(); });
+  sortGroup.appendChild(sortSelect);
+  filterBar.appendChild(sortGroup);
+
+  app.appendChild(button("+ New Project", "btn primary", () => openProjectForm(null)));
+
+  const ul = el("ul", "entities");
+  ul.style.marginTop = "1rem";
+  app.appendChild(ul);
+  const noMatch = emptyMsg("No projects match your criteria.");
+  noMatch.style.display = "none";
+  app.appendChild(noMatch);
+
+  function draw() {
+    projectFilters.query = search.value;
+    const q = search.value.trim().toLowerCase();
+    ul.innerHTML = "";
+    let list = state.projects.slice();
+    if (q) {
+      list = list.filter(p =>
+        p.name.toLowerCase().indexOf(q) !== -1 ||
+        p.id.toLowerCase().indexOf(q) !== -1 ||
+        String(p.phase).toLowerCase().indexOf(q) !== -1 ||
+        String(p.status).toLowerCase().indexOf(q) !== -1);
+    }
+    if (projectFilters.health.size) list = list.filter(p => projectFilters.health.has(p.health));
+    if (projectFilters.status.size) list = list.filter(p => projectFilters.status.has(p.status));
+    const key = projectFilters.sort;
+    list.sort((a, b) => {
+      if (key === "name") return a.name.localeCompare(b.name);
+      if (key === "completion") return b.completion - a.completion;
+      if (key === "endDate") return String(a.endDate).localeCompare(String(b.endDate));
+      if (key === "budget") return b.budget - a.budget;
+      return 0;
+    });
+    noMatch.style.display = list.length ? "none" : "block";
+    list.forEach(p => ul.appendChild(projectRow(p)));
+  }
+  search.addEventListener("input", draw);
+  draw();
+}
+
+function renderProjectDetail(id) {
+  app.innerHTML = "";
+  const p = findProject(id);
+  if (!p) {
+    app.appendChild(heading("Project not found"));
+    app.appendChild(emptyMsg("That project no longer exists."));
+    app.appendChild(button("← Back to Projects", "btn", () => goRoute("projects")));
+    return;
+  }
+  const h = heading(p.name);
+  app.appendChild(h);
+  app.appendChild(el("p", "sub", p.id + " · " + p.phase));
+
+  const grid = el("div", "stat-grid");
+  grid.appendChild(statCard("Status", p.status));
+  grid.appendChild(statCard("Health", healthOf(p.health)));
+  grid.appendChild(statCard("Project Lead", p.lead));
+  grid.appendChild(statCard("End Date", p.endDate));
+  app.appendChild(grid);
+
+  const sec = section("Progress");
+  sec.appendChild(barRow("Completion", p.completion, 100, p.completion + "%", p.completion >= 75 ? "ok" : ""));
+  const util = p.budget > 0 ? (p.spent / p.budget) * 100 : 0;
+  sec.appendChild(barRow("Budget utilization", p.spent, Math.max(p.budget, p.spent), money(p.spent) + " / " + money(p.budget), util > 90 ? "over" : "ok"));
+  sec.appendChild(barRow("Budget used", util, 100, pct(util), util > 90 ? "over" : "ok"));
+  app.appendChild(sec);
+
+  const ms = section("Next Milestone");
+  ms.appendChild(el("p", "sub", p.nextMilestone));
+  app.appendChild(ms);
+
+  const relatedTasks = state.tasks.filter(t => t.project === p.id);
+  const tsec = section("Related Tasks");
+  if (!relatedTasks.length) tsec.appendChild(emptyMsg("No tasks linked to this project."));
+  const tul = el("ul", "entities");
+  relatedTasks.forEach(t => tul.appendChild(taskRow(t)));
+  tsec.appendChild(tul);
+  app.appendChild(tsec);
+
+  const actions = el("div", "edit-actions");
+  actions.appendChild(button("Update Project", "btn primary", () => openProjectForm(p.id)));
+  actions.appendChild(button("← Back to Projects", "btn", () => goRoute("projects")));
+  app.appendChild(actions);
+}
+
+function openProjectForm(id) {
+  const existing = id ? findProject(id) : null;
+  const draft = existing ? clone(existing) : {
+    id: "", name: "", phase: "", health: "green", status: "Planning",
+    completion: 0, budget: 0, spent: 0, lead: "", endDate: "", nextMilestone: "",
+  };
+  app.innerHTML = "";
+  app.appendChild(heading(existing ? "Edit Project" : "New Project"));
+  const panel = el("div", "edit-panel");
+  app.appendChild(panel);
+
+  const idInput = textInput(draft.id);
+  const nameInput = textInput(draft.name);
+  const phaseInput = textInput(draft.phase);
+  const healthSelect = selectInput(HEALTHS, draft.health, h => HEALTH_LABEL[h]);
+  const statusSelect = selectInput(STATUSES, draft.status);
+  const completionInput = textInput(draft.completion, "number");
+  completionInput.min = "0"; completionInput.max = "100";
+  const budgetInput = textInput(draft.budget, "number");
+  budgetInput.min = "0";
+  const spentInput = textInput(draft.spent, "number");
+  spentInput.min = "0";
+  const leadInput = textInput(draft.lead);
+  const endInput = textInput(draft.endDate);
+  endInput.placeholder = "YYYY-MM-DD";
+  const milestoneInput = textInput(draft.nextMilestone);
+
+  const r1 = el("div", "edit-row");
+  r1.appendChild(field("Project ID", idInput));
+  r1.appendChild(field("Name", nameInput));
+  const r2 = el("div", "edit-row");
+  r2.appendChild(field("Phase", phaseInput));
+  r2.appendChild(field("Health", healthSelect));
+  r2.appendChild(field("Status", statusSelect));
+  const r3 = el("div", "edit-row");
+  r3.appendChild(field("Completion %", completionInput));
+  r3.appendChild(field("Budget", budgetInput));
+  r3.appendChild(field("Spent", spentInput));
+  const r4 = el("div", "edit-row");
+  r4.appendChild(field("Project Lead", leadInput));
+  r4.appendChild(field("End Date", endInput));
+  panel.appendChild(r1);
+  panel.appendChild(r2);
+  panel.appendChild(r3);
+  panel.appendChild(r4);
+  panel.appendChild(field("Next Milestone", milestoneInput));
+
+  const actions = el("div", "edit-actions");
+  actions.appendChild(button("Save", "btn primary", () => {
+    const values = {
+      name: nameInput.value.trim() || "Untitled project",
+      phase: phaseInput.value.trim() || "Ideate",
+      health: healthSelect.value,
+      status: statusSelect.value,
+      completion: Math.max(0, Math.min(100, parseInt(completionInput.value, 10) || 0)),
+      budget: Math.max(0, parseFloat(budgetInput.value) || 0),
+      spent: Math.max(0, parseFloat(spentInput.value) || 0),
+      lead: leadInput.value.trim() || "Unassigned",
+      endDate: endInput.value.trim() || "—",
+      nextMilestone: milestoneInput.value.trim() || "—",
+    };
+    if (existing) {
+      Object.keys(values).forEach(k => { existing[k] = values[k]; });
+      const newId = idInput.value.trim();
+      if (newId && newId !== existing.id) {
+        state.tasks.forEach(t => { if (t.project === existing.id) t.project = newId; });
+        existing.id = newId;
+      }
+      saveState();
+      goRoute("project/" + encodeURIComponent(existing.id));
+    } else {
+      values.id = idInput.value.trim() || nextId("PROJ-");
+      state.projects.push(values);
+      saveState();
+      goRoute("projects");
+    }
+  }));
+  actions.appendChild(button("Cancel", "btn", () => goRoute(existing ? "project/" + encodeURIComponent(existing.id) : "projects")));
+  if (existing) {
+    actions.appendChild(button("Delete", "btn danger", () => {
+      if (!confirm("Delete this project?")) return;
+      state.projects = state.projects.filter(p => p.id !== existing.id);
+      saveState();
+      goRoute("projects");
+    }));
+  }
+  panel.appendChild(actions);
+}
+
+function openAlertForm(id) {
+  const existing = id ? findAlert(id) : null;
+  const draft = existing ? clone(existing) : { type: "warning", message: "" };
+  app.innerHTML = "";
+  app.appendChild(heading(existing ? "Edit Alert" : "New Alert"));
+  const panel = el("div", "edit-panel");
+  app.appendChild(panel);
+  const typeSelect = selectInput(ALERT_TYPES, draft.type);
+  const msgInput = textInput(draft.message);
+  const row = el("div", "edit-row");
+  row.appendChild(field("Type", typeSelect));
+  row.appendChild(field("Message", msgInput));
+  panel.appendChild(row);
+  const actions = el("div", "edit-actions");
+  actions.appendChild(button("Save", "btn primary", () => {
+    const message = msgInput.value.trim() || "Untitled alert";
+    const type = typeSelect.value;
+    if (existing) { existing.message = message; existing.type = type; }
+    else state.alerts.push({ id: nextId("AL"), type: type, message: message });
+    saveState();
+    goRoute("dashboard");
+  }));
+  actions.appendChild(button("Cancel", "btn", () => goRoute("dashboard")));
+  if (existing) {
+    actions.appendChild(button("Delete", "btn danger", () => {
+      if (!confirm("Delete this alert?")) return;
+      state.alerts = state.alerts.filter(a => a.id !== existing.id);
+      saveState();
+      goRoute("dashboard");
+    }));
+  }
+  panel.appendChild(actions);
+}
+
+// ---------- Financials ----------
+function renderFinancials() {
+  app.innerHTML = "";
+  app.appendChild(heading("Financials"));
+
+  const grid = el("div", "stat-grid");
+  state.financialKpis.forEach(k => {
+    const card = statCard(k.title, k.value, k.change, k.positive ? "up" : "down");
+    const edit = button("Edit", "btn small", () => openFinancialKpiForm(k.id));
+    edit.style.marginTop = ".5rem";
+    card.appendChild(edit);
+    grid.appendChild(card);
+  });
+  app.appendChild(grid);
+  app.appendChild(button("+ New KPI", "btn primary", () => openFinancialKpiForm(null)));
+
+  const s = state.settings;
+  const targetSec = section("Revenue vs Target");
+  const revPct = s.revenueTarget > 0 ? (s.currentRevenue / s.revenueTarget) * 100 : 0;
+  targetSec.appendChild(barRow("Progress", s.currentRevenue, s.revenueTarget, money(s.currentRevenue) + " / " + money(s.revenueTarget), revPct >= 80 ? "ok" : "warn"));
+  targetSec.appendChild(barRow("Portfolio budget", totalSpent(), Math.max(totalBudget(), totalSpent()), money(totalSpent()) + " / " + money(totalBudget()), totalSpent() > totalBudget() ? "over" : "ok"));
+  app.appendChild(targetSec);
+
+  const revSec = revenueSection();
+  revSec.appendChild(button("+ New Month", "btn primary", () => openRevenueForm(null)));
+  const rul = el("ul", "entities");
+  rul.style.marginTop = ".8rem";
+  state.revenueData.forEach((r, i) => {
+    const li = el("li", "entity");
+    const left = el("div", "grow");
+    left.appendChild(el("div", "main", r.name));
+    left.appendChild(el("div", "meta", money(r.revenue)));
+    li.appendChild(left);
+    const actions = el("div", "actions");
+    actions.appendChild(button("Edit", "btn small", () => openRevenueForm(i)));
+    actions.appendChild(button("Delete", "btn small danger", () => {
+      if (!confirm("Delete this month?")) return;
+      state.revenueData.splice(i, 1); saveState(); render();
+    }));
+    li.appendChild(actions);
+    rul.appendChild(li);
+  });
+  revSec.appendChild(rul);
+  app.appendChild(revSec);
+
+  const allocSec = allocationSection();
+  allocSec.appendChild(button("+ New Allocation", "btn primary", () => openAllocationForm(null)));
+  const aul = el("ul", "entities");
+  aul.style.marginTop = ".8rem";
+  const allocTotal = state.budgetAllocation.reduce((a, b) => a + Number(b.value || 0), 0);
+  state.budgetAllocation.forEach((b, i) => {
+    const li = el("li", "entity");
+    const left = el("div", "grow");
+    left.appendChild(el("div", "main", b.name));
+    left.appendChild(el("div", "meta", b.value + "% of allocated budget"));
+    li.appendChild(left);
+    const actions = el("div", "actions");
+    actions.appendChild(button("Edit", "btn small", () => openAllocationForm(i)));
+    actions.appendChild(button("Delete", "btn small danger", () => {
+      if (!confirm("Delete this allocation?")) return;
+      state.budgetAllocation.splice(i, 1); saveState(); render();
+    }));
+    li.appendChild(actions);
+    aul.appendChild(li);
+  });
+  allocSec.appendChild(aul);
+  allocSec.appendChild(el("p", "sub", "Allocations total " + allocTotal + "%."));
+  app.appendChild(allocSec);
+}
+
+function openFinancialKpiForm(id) {
+  const existing = id ? findKpi(id) : null;
+  const draft = existing ? clone(existing) : { title: "", value: "", change: "", positive: true };
+  app.innerHTML = "";
+  app.appendChild(heading(existing ? "Edit Financial KPI" : "New Financial KPI"));
+  const panel = el("div", "edit-panel");
+  app.appendChild(panel);
+  const titleInput = textInput(draft.title);
+  const valueInput = textInput(draft.value);
+  const changeInput = textInput(draft.change);
+  const positiveSelect = selectInput(["true", "false"], String(draft.positive), v => v === "true" ? "Positive (green)" : "Negative (red)");
+  const row = el("div", "edit-row");
+  row.appendChild(field("Title", titleInput));
+  row.appendChild(field("Value", valueInput));
+  row.appendChild(field("Change", changeInput));
+  row.appendChild(field("Direction", positiveSelect));
+  panel.appendChild(row);
+  const actions = el("div", "edit-actions");
+  actions.appendChild(button("Save", "btn primary", () => {
+    const values = {
+      title: titleInput.value.trim() || "Untitled KPI",
+      value: valueInput.value.trim() || "—",
+      change: changeInput.value.trim() || "",
+      positive: positiveSelect.value === "true",
+    };
+    if (existing) Object.keys(values).forEach(k => { existing[k] = values[k]; });
+    else { values.id = nextId("FK"); state.financialKpis.push(values); }
+    saveState();
+    goRoute("financials");
+  }));
+  actions.appendChild(button("Cancel", "btn", () => goRoute("financials")));
+  if (existing) {
+    actions.appendChild(button("Delete", "btn danger", () => {
+      if (!confirm("Delete this KPI?")) return;
+      state.financialKpis = state.financialKpis.filter(k => k.id !== existing.id);
+      saveState(); goRoute("financials");
+    }));
+  }
+  panel.appendChild(actions);
+}
+
+function openRevenueForm(index) {
+  const existing = index === null || index === undefined ? null : state.revenueData[index];
+  const draft = existing ? clone(existing) : { name: "", revenue: 0 };
+  app.innerHTML = "";
+  app.appendChild(heading(existing ? "Edit Revenue Month" : "New Revenue Month"));
+  const panel = el("div", "edit-panel");
+  app.appendChild(panel);
+  const nameInput = textInput(draft.name);
+  const revInput = textInput(draft.revenue, "number");
+  revInput.min = "0";
+  const row = el("div", "edit-row");
+  row.appendChild(field("Month", nameInput));
+  row.appendChild(field("Revenue", revInput));
+  panel.appendChild(row);
+  const actions = el("div", "edit-actions");
+  actions.appendChild(button("Save", "btn primary", () => {
+    const values = { name: nameInput.value.trim() || "New", revenue: Math.max(0, parseFloat(revInput.value) || 0) };
+    if (existing) { existing.name = values.name; existing.revenue = values.revenue; }
+    else state.revenueData.push(values);
+    saveState(); goRoute("financials");
+  }));
+  actions.appendChild(button("Cancel", "btn", () => goRoute("financials")));
+  if (existing) {
+    actions.appendChild(button("Delete", "btn danger", () => {
+      if (!confirm("Delete this month?")) return;
+      state.revenueData.splice(index, 1);
+      saveState(); goRoute("financials");
+    }));
+  }
+  panel.appendChild(actions);
+}
+
+function openAllocationForm(index) {
+  const existing = index === null || index === undefined ? null : state.budgetAllocation[index];
+  const draft = existing ? clone(existing) : { name: "", value: 0 };
+  app.innerHTML = "";
+  app.appendChild(heading(existing ? "Edit Budget Allocation" : "New Budget Allocation"));
+  const panel = el("div", "edit-panel");
+  app.appendChild(panel);
+  const nameInput = textInput(draft.name);
+  const valInput = textInput(draft.value, "number");
+  valInput.min = "0"; valInput.max = "100";
+  const row = el("div", "edit-row");
+  row.appendChild(field("Category", nameInput));
+  row.appendChild(field("Share (%)", valInput));
+  panel.appendChild(row);
+  const actions = el("div", "edit-actions");
+  actions.appendChild(button("Save", "btn primary", () => {
+    const values = { name: nameInput.value.trim() || "Other", value: Math.max(0, Math.min(100, parseFloat(valInput.value) || 0)) };
+    if (existing) { existing.name = values.name; existing.value = values.value; }
+    else state.budgetAllocation.push(values);
+    saveState(); goRoute("financials");
+  }));
+  actions.appendChild(button("Cancel", "btn", () => goRoute("financials")));
+  if (existing) {
+    actions.appendChild(button("Delete", "btn danger", () => {
+      if (!confirm("Delete this allocation?")) return;
+      state.budgetAllocation.splice(index, 1);
+      saveState(); goRoute("financials");
+    }));
+  }
+  panel.appendChild(actions);
+}
+
+// ---------- Analytics ----------
+const taskFilters = { priority: new Set(), query: "" };
+
+function renderAnalytics() {
+  app.innerHTML = "";
+  app.appendChild(heading("Analytics"));
+
+  const grid = el("div", "stat-grid");
+  grid.appendChild(statCard("Open Tasks", state.tasks.length));
+  grid.appendChild(statCard("High Priority", state.tasks.filter(t => t.priority === "High").length));
+  grid.appendChild(statCard("Avg Completion", pct(avgCompletion())));
+  grid.appendChild(statCard("Budget Used", pct(totalBudget() > 0 ? (totalSpent() / totalBudget()) * 100 : 0)));
+  app.appendChild(grid);
+
+  const tSec = section("Upcoming Tasks");
+  const search = textInput(taskFilters.query, "search");
+  search.placeholder = "Search tasks or projects…";
+  tSec.appendChild(search);
+  const fb = el("div", "filter-bar");
+  fb.style.marginTop = ".8rem";
+  fb.appendChild(pillGroup("Priority", PRIORITIES, taskFilters.priority, () => drawTasks()));
+  tSec.appendChild(fb);
+  tSec.appendChild(button("+ New Task", "btn primary", () => openTaskForm(null)));
+  const ul = el("ul", "entities");
+  ul.style.marginTop = ".8rem";
+  tSec.appendChild(ul);
+  const noMatch = emptyMsg("No tasks match your search.");
+  noMatch.style.display = "none";
+  tSec.appendChild(noMatch);
+  function drawTasks() {
+    taskFilters.query = search.value;
+    const q = search.value.trim().toLowerCase();
+    ul.innerHTML = "";
+    let list = state.tasks.slice();
+    if (q) list = list.filter(t => t.name.toLowerCase().indexOf(q) !== -1 || String(t.project).toLowerCase().indexOf(q) !== -1);
+    if (taskFilters.priority.size) list = list.filter(t => taskFilters.priority.has(t.priority));
+    list.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
+    noMatch.style.display = list.length ? "none" : "block";
+    list.forEach(t => ul.appendChild(taskRow(t)));
+  }
+  search.addEventListener("input", drawTasks);
+  drawTasks();
+  app.appendChild(tSec);
+
+  const priSec = section("Tasks by Priority");
+  const priMax = Math.max.apply(null, PRIORITIES.map(p => state.tasks.filter(t => t.priority === p).length).concat([1]));
+  PRIORITIES.forEach(p => {
+    const count = state.tasks.filter(t => t.priority === p).length;
+    priSec.appendChild(barRow(p, count, priMax, count + " tasks", p === "High" ? "over" : (p === "Medium" ? "warn" : "ok")));
+  });
+  app.appendChild(priSec);
+
+  const compSec = section("Completion by Project");
+  if (!state.projects.length) compSec.appendChild(emptyMsg("No projects yet."));
+  state.projects.forEach(p => compSec.appendChild(barRow(p.id, p.completion, 100, p.completion + "%", p.completion >= 75 ? "ok" : "")));
+  app.appendChild(compSec);
+
+  const budSec = section("Budget Utilization by Project");
+  state.projects.forEach(p => {
+    const util = p.budget > 0 ? (p.spent / p.budget) * 100 : 0;
+    budSec.appendChild(barRow(p.id, util, 100, pct(util), util > 90 ? "over" : (util > 70 ? "warn" : "ok")));
+  });
+  app.appendChild(budSec);
+
+  const healthSec = section("Projects by Health");
+  const counts = healthCounts();
+  const hMax = Math.max(counts.green, counts.yellow, counts.red, 1);
+  healthSec.appendChild(barRow("On Track", counts.green, hMax, counts.green + " projects", "ok"));
+  healthSec.appendChild(barRow("At Risk", counts.yellow, hMax, counts.yellow + " projects", "warn"));
+  healthSec.appendChild(barRow("Off Track", counts.red, hMax, counts.red + " projects", "over"));
+  healthSec.appendChild(barRow("Resource use", state.settings.resourceUtilization, 100, state.settings.resourceUtilization + "%"));
+  app.appendChild(healthSec);
+}
+
+function openTaskForm(id) {
+  const existing = id ? findTask(id) : null;
+  const draft = existing ? clone(existing) : { name: "", project: "Personal", dueDate: "", priority: "Medium" };
+  app.innerHTML = "";
+  app.appendChild(heading(existing ? "Edit Task" : "New Task"));
+  const panel = el("div", "edit-panel");
+  app.appendChild(panel);
+  const nameInput = textInput(draft.name);
+  const projOptions = state.projects.map(p => p.id).concat(["Personal"]);
+  if (projOptions.indexOf(draft.project) === -1) projOptions.push(draft.project);
+  const projSelect = selectInput(projOptions, draft.project);
+  const dueInput = textInput(draft.dueDate);
+  dueInput.placeholder = "YYYY-MM-DD";
+  const priSelect = selectInput(PRIORITIES, draft.priority);
+  panel.appendChild(field("Task", nameInput));
+  const row = el("div", "edit-row");
+  row.appendChild(field("Project", projSelect));
+  row.appendChild(field("Due Date", dueInput));
+  row.appendChild(field("Priority", priSelect));
+  panel.appendChild(row);
+  const actions = el("div", "edit-actions");
+  actions.appendChild(button("Save", "btn primary", () => {
+    const values = {
+      name: nameInput.value.trim() || "Untitled task",
+      project: projSelect.value,
+      dueDate: dueInput.value.trim() || "—",
+      priority: priSelect.value,
+    };
+    if (existing) Object.keys(values).forEach(k => { existing[k] = values[k]; });
+    else { values.id = nextId("T"); state.tasks.push(values); }
+    saveState();
+    goRoute("analytics");
+  }));
+  actions.appendChild(button("Cancel", "btn", () => goRoute("analytics")));
+  if (existing) {
+    actions.appendChild(button("Delete", "btn danger", () => {
+      if (!confirm("Delete this task?")) return;
+      state.tasks = state.tasks.filter(t => t.id !== existing.id);
+      saveState(); goRoute("analytics");
+    }));
+  }
+  panel.appendChild(actions);
+}
+
+// ---------- Smart Assistant ----------
+// The original assistant proxied questions to a remote LLM. This is a local,
+// dependency-free query engine over the same portfolio data, so the app makes
+// no network calls.
+const SUGGESTED_PROMPTS = [
+  "Summarize the status of all active projects.",
+  "Which projects are at risk or off track?",
+  "What's the budget status for project AMLS-2025?",
+  "List all high priority tasks.",
+];
+let assistantLog = [];
+
+function answerQuestion(question) {
+  const q = String(question || "").trim();
+  const lower = q.toLowerCase();
+  const blocks = [];
+  if (!lower) return [{ kind: "text", text: "Ask me something about the portfolio." }];
+
+  // 1. A specific project mentioned by ID or name.
+  const named = state.projects.find(p =>
+    lower.indexOf(p.id.toLowerCase()) !== -1 || lower.indexOf(p.name.toLowerCase()) !== -1);
+  if (named) {
+    const util = named.budget > 0 ? (named.spent / named.budget) * 100 : 0;
+    blocks.push({ kind: "text", text: named.name + " (" + named.id + ") is " + named.status +
+      " with health " + healthOf(named.health) + ". It is " + named.completion + "% complete and has spent " +
+      money(named.spent) + " of its " + money(named.budget) + " budget (" + pct(util) + " utilized). Next milestone: " +
+      named.nextMilestone + ", due " + named.endDate + ". Lead: " + named.lead + "." });
+    blocks.push({ kind: "bars", rows: [
+      { label: "Completion", val: named.completion, max: 100, text: named.completion + "%" },
+      { label: "Budget used", val: util, max: 100, text: pct(util), cls: util > 90 ? "over" : "ok" },
+    ]});
+    const rel = state.tasks.filter(t => t.project === named.id);
+    if (rel.length) blocks.push({ kind: "list", title: "Related tasks", items: rel.map(t => ({ main: t.name, meta: t.priority + " · due " + t.dueDate })) });
+    return blocks;
+  }
+
+  // 2. Risk questions.
+  if (lower.indexOf("risk") !== -1 || lower.indexOf("off track") !== -1 || lower.indexOf("critical") !== -1 || lower.indexOf("behind") !== -1) {
+    const risky = state.projects.filter(p => p.health !== "green");
+    if (!risky.length) return [{ kind: "text", text: "No projects are currently flagged at risk or off track — all " + state.projects.length + " projects are on track." }];
+    blocks.push({ kind: "text", text: risky.length + " project(s) need attention:" });
+    blocks.push({ kind: "list", items: risky.map(p => ({
+      main: p.name + " (" + p.id + ")",
+      meta: healthOf(p.health) + " · " + p.status + " · " + p.completion + "% complete · " + money(p.spent) + " of " + money(p.budget) + " spent · due " + p.endDate,
+    }))});
+    return blocks;
+  }
+
+  // 3. Task questions.
+  if (lower.indexOf("task") !== -1 || lower.indexOf("due") !== -1 || lower.indexOf("deadline") !== -1 || lower.indexOf("priority") !== -1) {
+    let list = state.tasks.slice();
+    const pri = PRIORITIES.find(p => lower.indexOf(p.toLowerCase() + " priority") !== -1 || lower.indexOf("priority " + p.toLowerCase()) !== -1 || lower.indexOf(p.toLowerCase() + "-priority") !== -1);
+    if (pri) list = list.filter(t => t.priority === pri);
+    list.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
+    if (!list.length) return [{ kind: "text", text: "No matching tasks." }];
+    blocks.push({ kind: "text", text: (pri ? pri + " priority tasks" : "All tasks") + ", earliest due date first (" + list.length + "):" });
+    blocks.push({ kind: "list", items: list.map(t => ({ main: t.name, meta: t.project + " · " + t.priority + " · due " + t.dueDate })) });
+    return blocks;
+  }
+
+  // 4. Budget / spend questions.
+  if (lower.indexOf("budget") !== -1 || lower.indexOf("spend") !== -1 || lower.indexOf("spent") !== -1 || lower.indexOf("cost") !== -1) {
+    const tb = totalBudget(), ts = totalSpent();
+    blocks.push({ kind: "text", text: "Across " + state.projects.length + " projects the portfolio has a total budget of " + money(tb) + " with " + money(ts) + " spent (" + pct(tb > 0 ? (ts / tb) * 100 : 0) + " utilized)." });
+    blocks.push({ kind: "bars", rows: state.projects.map(p => {
+      const u = p.budget > 0 ? (p.spent / p.budget) * 100 : 0;
+      return { label: p.id, val: u, max: 100, text: pct(u), cls: u > 90 ? "over" : "ok" };
+    })});
+    return blocks;
+  }
+
+  // 5. Revenue / financial questions.
+  if (lower.indexOf("revenue") !== -1 || lower.indexOf("financ") !== -1 || lower.indexOf("target") !== -1 || lower.indexOf("profit") !== -1 || lower.indexOf("sales") !== -1) {
+    const s = state.settings;
+    blocks.push({ kind: "text", text: "Revenue is " + money(s.currentRevenue) + " against a target of " + money(s.revenueTarget) + " (" + pct(s.revenueTarget > 0 ? (s.currentRevenue / s.revenueTarget) * 100 : 0) + " of target)." });
+    const max = Math.max.apply(null, state.revenueData.map(r => Number(r.revenue) || 0).concat([1]));
+    blocks.push({ kind: "bars", rows: state.revenueData.map(r => ({ label: r.name, val: r.revenue, max: max, text: money(r.revenue) })) });
+    blocks.push({ kind: "list", title: "Financial KPIs", items: state.financialKpis.map(k => ({ main: k.title + ": " + k.value, meta: k.change })) });
+    return blocks;
+  }
+
+  // 6. Alerts.
+  if (lower.indexOf("alert") !== -1 || lower.indexOf("warning") !== -1 || lower.indexOf("notif") !== -1) {
+    if (!state.alerts.length) return [{ kind: "text", text: "There are no active alerts." }];
+    blocks.push({ kind: "text", text: "There are " + state.alerts.length + " active alert(s):" });
+    blocks.push({ kind: "list", items: state.alerts.map(a => ({ main: (ALERT_ICON[a.type] || "•") + " " + a.message, meta: a.type })) });
+    return blocks;
+  }
+
+  // 7. Milestones.
+  if (lower.indexOf("milestone") !== -1 || lower.indexOf("next up") !== -1) {
+    blocks.push({ kind: "text", text: "Next milestone for each project:" });
+    blocks.push({ kind: "list", items: state.projects.map(p => ({ main: p.nextMilestone, meta: p.id + " · due " + p.endDate })) });
+    return blocks;
+  }
+
+  // 8. Portfolio summary / status.
+  if (lower.indexOf("summar") !== -1 || lower.indexOf("status") !== -1 || lower.indexOf("overview") !== -1 ||
+      lower.indexOf("all project") !== -1 || lower.indexOf("portfolio") !== -1 || lower.indexOf("health") !== -1) {
+    const counts = healthCounts();
+    blocks.push({ kind: "text", text: "Portfolio health is " + Number(state.settings.portfolioHealth).toFixed(1) + "/10 across " +
+      state.projects.length + " projects: " + counts.green + " on track, " + counts.yellow + " at risk, " + counts.red + " off track. " +
+      "Average completion is " + pct(avgCompletion()) + " and " + money(totalSpent()) + " of " + money(totalBudget()) + " budget has been spent." });
+    blocks.push({ kind: "list", items: state.projects.map(p => ({
+      main: p.name + " (" + p.id + ")",
+      meta: p.status + " · " + healthOf(p.health) + " · " + p.completion + "% · due " + p.endDate + " · next: " + p.nextMilestone,
+    }))});
+    return blocks;
+  }
+
+  // 9. Keyword fallback across every entity.
+  const hitsP = state.projects.filter(p => (p.name + " " + p.id + " " + p.phase + " " + p.nextMilestone).toLowerCase().indexOf(lower) !== -1);
+  const hitsT = state.tasks.filter(t => (t.name + " " + t.project).toLowerCase().indexOf(lower) !== -1);
+  const hitsA = state.alerts.filter(a => a.message.toLowerCase().indexOf(lower) !== -1);
+  if (hitsP.length || hitsT.length || hitsA.length) {
+    blocks.push({ kind: "text", text: "Here's what matches “" + q + "”:" });
+    if (hitsP.length) blocks.push({ kind: "list", title: "Projects", items: hitsP.map(p => ({ main: p.name + " (" + p.id + ")", meta: p.status + " · " + p.completion + "%" })) });
+    if (hitsT.length) blocks.push({ kind: "list", title: "Tasks", items: hitsT.map(t => ({ main: t.name, meta: t.project + " · " + t.priority })) });
+    if (hitsA.length) blocks.push({ kind: "list", title: "Alerts", items: hitsA.map(a => ({ main: a.message, meta: a.type })) });
+    return blocks;
+  }
+
+  return [{ kind: "text", text: "I couldn't find anything for that. Try asking about project status, risk, budgets, revenue, alerts, milestones, or tasks — or name a project such as " + (state.projects[0] ? state.projects[0].id : "a project") + "." }];
+}
+
+function renderAnswerBlocks(container, blocks) {
+  blocks.forEach(b => {
+    if (b.kind === "text") {
+      container.appendChild(el("div", "a-text", b.text));
+    } else if (b.kind === "list") {
+      if (b.title) container.appendChild(el("div", "fg-label", b.title));
+      const ul = el("ul", "entities");
+      b.items.forEach(it => {
+        const li = el("li", "entity");
+        const left = el("div", "grow");
+        left.appendChild(el("div", "main", it.main));
+        if (it.meta) left.appendChild(el("div", "meta", it.meta));
+        li.appendChild(left);
+        ul.appendChild(li);
+      });
+      container.appendChild(ul);
+    } else if (b.kind === "bars") {
+      b.rows.forEach(r => container.appendChild(barRow(r.label, r.val, r.max, r.text, r.cls)));
+    }
+  });
+}
+
+function askAssistant(question) {
+  const q = String(question || "").trim();
+  if (!q) return;
+  assistantLog.push({ q: q, blocks: answerQuestion(q) });
+  renderAssistant();
+}
+
+function renderAssistant() {
+  app.innerHTML = "";
+  app.appendChild(heading("Smart Assistant"));
+  app.appendChild(el("p", "sub", "Ask questions about the portfolio. Answers are computed locally from your current data — nothing leaves your browser."));
+
+  const panel = el("div", "edit-panel");
+  const row = el("div", "ask-row");
+  const input = textInput("", "text");
+  input.placeholder = "Ask about your portfolio…";
+  const ask = button("Ask", "btn primary", () => { const v = input.value; input.value = ""; askAssistant(v); });
+  input.addEventListener("keydown", e => { if (e.key === "Enter") { const v = input.value; input.value = ""; askAssistant(v); } });
+  row.appendChild(input);
+  row.appendChild(ask);
+  panel.appendChild(row);
+
+  const sug = el("div", "filter-group");
+  sug.style.marginTop = ".8rem";
+  sug.appendChild(el("span", "fg-label", "Suggested questions"));
+  const scroll = el("div", "pill-scroll");
+  SUGGESTED_PROMPTS.forEach(p => {
+    const pill = el("button", "pill", p);
+    pill.type = "button";
+    pill.addEventListener("click", () => askAssistant(p));
+    scroll.appendChild(pill);
+  });
+  sug.appendChild(scroll);
+  panel.appendChild(sug);
+  app.appendChild(panel);
+
+  const sec = section("Conversation");
+  if (!assistantLog.length) {
+    sec.appendChild(emptyMsg("Hello! I'm your portfolio assistant. How can I help you analyze your data today?"));
+  } else {
+    sec.appendChild(button("Clear conversation", "btn small danger", () => { assistantLog = []; renderAssistant(); }));
+    assistantLog.slice().reverse().forEach(entry => {
+      const card = el("div", "qa");
+      card.appendChild(el("div", "q", "You: " + entry.q));
+      renderAnswerBlocks(card, entry.blocks);
+      sec.appendChild(card);
+    });
+  }
+  app.appendChild(sec);
+}
+
+// ---------- Wiki ----------
+let wikiTopic = WIKI[0].id;
+
+function renderWiki() {
+  app.innerHTML = "";
+  app.appendChild(heading("Knowledge Base", WIKI.length));
+
+  const group = el("div", "filter-group");
+  group.appendChild(el("span", "fg-label", "Topics"));
+  const scroll = el("div", "pill-scroll");
+  WIKI.forEach(t => {
+    const pill = el("button", "pill" + (t.id === wikiTopic ? " active" : ""), t.icon + " " + t.nav);
+    pill.type = "button";
+    pill.addEventListener("click", () => { wikiTopic = t.id; renderWiki(); });
+    scroll.appendChild(pill);
+  });
+  group.appendChild(scroll);
+  app.appendChild(group);
+
+  const topic = WIKI.find(t => t.id === wikiTopic) || WIKI[0];
+  const panel = el("div", "edit-panel");
+  panel.appendChild(el("h2", null, topic.title));
+  panel.appendChild(el("p", "sub", topic.subtitle));
+  topic.sections.forEach(sec => {
+    const s = el("div", "section");
+    s.appendChild(el("h2", null, sec.title));
+    const prose = el("div", "prose");
+    sec.blocks.forEach(b => {
+      if (b.t === "p") {
+        prose.appendChild(el("p", null, b.text));
+      } else if (b.t === "h3") {
+        prose.appendChild(el("h3", null, b.text));
+      } else if (b.t === "code") {
+        const pre = el("pre");
+        pre.appendChild(el("code", null, b.text));
+        prose.appendChild(pre);
+      } else if (b.t === "ul") {
+        const ul = document.createElement("ul");
+        b.items.forEach(it => {
+          const li = document.createElement("li");
+          if (it.b) {
+            li.appendChild(el("strong", null, it.b));
+            li.appendChild(document.createTextNode(" " + it.text));
+          } else {
+            li.appendChild(document.createTextNode(it.text));
+          }
+          ul.appendChild(li);
+        });
+        prose.appendChild(ul);
+      } else if (b.t === "table") {
+        const wrapEl = el("div", "table-scroll");
+        const table = el("table", "data");
+        const thead = document.createElement("thead");
+        const htr = document.createElement("tr");
+        b.headers.forEach(h => htr.appendChild(el("th", null, h)));
+        thead.appendChild(htr);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        b.rows.forEach(r => {
+          const tr = document.createElement("tr");
+          r.forEach(c => tr.appendChild(el("td", null, c)));
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        wrapEl.appendChild(table);
+        prose.appendChild(wrapEl);
+      }
+    });
+    s.appendChild(prose);
+    panel.appendChild(s);
+  });
+  app.appendChild(panel);
+}
+
+// ---------- Settings ----------
+function renderSettings() {
+  app.innerHTML = "";
+  app.appendChild(heading("Settings"));
+  const s = state.settings;
+
+  const portfolioPanel = el("div", "edit-panel");
+  portfolioPanel.appendChild(el("h2", null, "Portfolio Targets"));
+  const healthInput = textInput(s.portfolioHealth, "number");
+  healthInput.min = "0"; healthInput.max = "10"; healthInput.step = "0.1";
+  const targetInput = textInput(s.revenueTarget, "number");
+  targetInput.min = "0";
+  const currentInput = textInput(s.currentRevenue, "number");
+  currentInput.min = "0";
+  const utilInput = textInput(s.resourceUtilization, "number");
+  utilInput.min = "0"; utilInput.max = "100";
+  const prow = el("div", "edit-row");
+  prow.appendChild(field("Portfolio Health (0-10)", healthInput));
+  prow.appendChild(field("Revenue Target", targetInput));
+  prow.appendChild(field("Current Revenue", currentInput));
+  prow.appendChild(field("Resource Utilization %", utilInput));
+  portfolioPanel.appendChild(prow);
+  const pActions = el("div", "edit-actions");
+  pActions.appendChild(button("Save targets", "btn primary", () => {
+    s.portfolioHealth = Math.max(0, Math.min(10, parseFloat(healthInput.value) || 0));
+    s.revenueTarget = Math.max(0, parseFloat(targetInput.value) || 0);
+    s.currentRevenue = Math.max(0, parseFloat(currentInput.value) || 0);
+    s.resourceUtilization = Math.max(0, Math.min(100, parseFloat(utilInput.value) || 0));
+    saveState();
+    render();
+  }));
+  portfolioPanel.appendChild(pActions);
+  app.appendChild(portfolioPanel);
+
+  const profilePanel = el("div", "edit-panel");
+  profilePanel.appendChild(el("h2", null, "Profile"));
+  const nameInput = textInput(s.profileName);
+  const emailInput = textInput(s.profileEmail, "email");
+  profilePanel.appendChild(field("Name", nameInput));
+  profilePanel.appendChild(field("Email", emailInput));
+  const profActions = el("div", "edit-actions");
+  profActions.appendChild(button("Update Profile", "btn primary", () => {
+    s.profileName = nameInput.value.trim() || "Unnamed";
+    s.profileEmail = emailInput.value.trim();
+    saveState();
+    render();
+  }));
+  profilePanel.appendChild(profActions);
+  app.appendChild(profilePanel);
+
+  const notifPanel = el("div", "edit-panel");
+  notifPanel.appendChild(el("h2", null, "Notifications"));
+  [
+    ["notifyProjectUpdates", "Email on project updates"],
+    ["notifyCriticalAlerts", "SMS for critical alerts"],
+    ["notifyWeeklyReports", "Weekly performance reports"],
+  ].forEach(pair => {
+    const key = pair[0], label = pair[1];
+    const f = el("div", "edit-field inline");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!s[key];
+    cb.style.width = "auto";
+    cb.addEventListener("change", () => { s[key] = !!cb.checked; saveState(); });
+    const lab = el("label", null, label);
+    f.appendChild(cb);
+    f.appendChild(lab);
+    notifPanel.appendChild(f);
+  });
+  app.appendChild(notifPanel);
+
+  const dataSec = section("Data");
+  dataSec.appendChild(el("p", "sub", "Use the Export / Import / Reset controls above the nav bar to back up your edits, load a saved file, or start over from the original demo data. Everything is stored under the localStorage key “portfolio-dashboard:data” in this browser only."));
+  dataSec.appendChild(el("p", "sub", "Currently tracking " + state.projects.length + " projects, " + state.alerts.length + " alerts, " +
+    state.tasks.length + " tasks, " + state.revenueData.length + " revenue months, " + state.budgetAllocation.length + " budget allocations and " +
+    state.financialKpis.length + " financial KPIs."));
+  app.appendChild(dataSec);
+}
+
+render();
+</script>
+</body>
 </html>
